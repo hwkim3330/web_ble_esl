@@ -308,9 +308,17 @@
                 </div>
 
                 <button id="uploadBtn" class="btn-success" onclick="uploadToDevice()" disabled>📤 Upload to ESL</button>
+                <div id="uploadProgress" style="display:none; margin-top:12px;">
+                    <div style="background:#e0e0e0; border-radius:8px; height:8px; overflow:hidden;">
+                        <div id="progressBar" style="background:var(--success-color); height:100%; width:0%; transition:width 0.3s ease;"></div>
+                    </div>
+                    <p id="progressText" style="margin-top:6px; font-size:0.9rem; text-align:center;">준비 중...</p>
+                </div>
                 <button onclick="downloadCanvas()">💾 Download PNG</button>
                 <button onclick="clearCanvas()">🗑️ Clear Canvas</button>
                 <button onclick="addDemoLayout()">✨ Sample Layout</button>
+                <button onclick="undoCanvas()" id="undoBtn" disabled>↶ Undo</button>
+                <button onclick="redoCanvas()" id="redoBtn" disabled>↷ Redo</button>
             </div>
 
             <div class="card canvas-card">
@@ -374,13 +382,32 @@
         let gotAck = false;
         let currentAck = 0;
         let protocolStep = 0;
+        let canvasHistory = [];
+        let historyIndex = -1;
+        let maxHistory = 50;
 
         document.addEventListener('DOMContentLoaded', () => {
             initTheme();
             initCanvas();
             log('✅ Ready – Fabric.js canvas initialised for 296×128 ESL');
             log('💡 Draw freely, 가져온 이미지를 배치하고 업로드하세요.');
+
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', handleKeyboard);
         });
+
+        function handleKeyboard(e) {
+            // Ctrl+Z for undo
+            if (e.ctrlKey && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                undoCanvas();
+            }
+            // Ctrl+Y or Ctrl+Shift+Z for redo
+            if (e.ctrlKey && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+                e.preventDefault();
+                redoCanvas();
+            }
+        }
 
         function initTheme() {
             const savedTheme = localStorage.getItem('theme') || 'light';
@@ -418,6 +445,15 @@
                     addTextAt(pointer.x, pointer.y);
                 }
             });
+
+            // Add canvas history tracking
+            fabricCanvas.on('path:created', saveCanvasState);
+            fabricCanvas.on('object:added', saveCanvasState);
+            fabricCanvas.on('object:removed', saveCanvasState);
+            fabricCanvas.on('object:modified', saveCanvasState);
+
+            // Save initial state
+            saveCanvasState();
         }
 
         function setTool(tool) {
@@ -564,7 +600,57 @@
             fabricCanvas.clear();
             fabricCanvas.backgroundColor = '#ffffff';
             fabricCanvas.renderAll();
+            saveCanvasState();
             log('🗑️ Canvas cleared');
+        }
+
+        function saveCanvasState() {
+            // Remove future history if we're not at the end
+            if (historyIndex < canvasHistory.length - 1) {
+                canvasHistory = canvasHistory.slice(0, historyIndex + 1);
+            }
+
+            // Add current state
+            const state = JSON.stringify(fabricCanvas.toJSON());
+            canvasHistory.push(state);
+
+            // Limit history size
+            if (canvasHistory.length > maxHistory) {
+                canvasHistory.shift();
+            } else {
+                historyIndex++;
+            }
+
+            updateUndoRedoButtons();
+        }
+
+        function undoCanvas() {
+            if (historyIndex > 0) {
+                historyIndex--;
+                loadCanvasState(canvasHistory[historyIndex]);
+                updateUndoRedoButtons();
+                log('↶ Undo applied');
+            }
+        }
+
+        function redoCanvas() {
+            if (historyIndex < canvasHistory.length - 1) {
+                historyIndex++;
+                loadCanvasState(canvasHistory[historyIndex]);
+                updateUndoRedoButtons();
+                log('↷ Redo applied');
+            }
+        }
+
+        function loadCanvasState(state) {
+            fabricCanvas.loadFromJSON(state, () => {
+                fabricCanvas.renderAll();
+            });
+        }
+
+        function updateUndoRedoButtons() {
+            document.getElementById('undoBtn').disabled = historyIndex <= 0;
+            document.getElementById('redoBtn').disabled = historyIndex >= canvasHistory.length - 1;
         }
 
         function addDemoLayout() {
@@ -609,6 +695,7 @@
 
             fabricCanvas.add(box, header, subtitle, time);
             fabricCanvas.requestRenderAll();
+            saveCanvasState();
             log('✨ Sample layout inserted');
         }
 
@@ -708,6 +795,9 @@
                 await cmdCharacteristic.startNotifications();
                 cmdCharacteristic.addEventListener('characteristicvaluechanged', handleCommandResponse);
 
+                // Add disconnect listener
+                device.addEventListener('gattserverdisconnected', handleDeviceDisconnected);
+
                 updateConnectionStatus(true);
                 log('✅ Ready to upload');
             } catch (error) {
@@ -722,6 +812,15 @@
             }
             updateConnectionStatus(false);
             log('🔌 Disconnected');
+        }
+
+        function handleDeviceDisconnected() {
+            log('⚠️ Device disconnected unexpectedly');
+            updateConnectionStatus(false);
+            showUploadProgress(false);
+            device = null;
+            cmdCharacteristic = null;
+            imgCharacteristic = null;
         }
 
         function handleCommandResponse(event) {
@@ -789,15 +888,22 @@
             }
 
             try {
+                showUploadProgress(true);
+                updateProgress(0, '이미지 준비 중...');
+
                 const imageData = prepareImageData();
                 payload = convertToESLBitmap(imageData);
                 log(`🧮 Prepared payload (${payload.length} bytes)`);
 
+                updateProgress(10, '핸드셰이크 시작...');
                 protocolStep = 0;
                 gotAck = false;
                 currentAck = 0;
 
-                if (!await sendCommand([0x01])) return;
+                if (!await sendCommand([0x01])) {
+                    showUploadProgress(false);
+                    return;
+                }
 
                 for (let i = 0; i < 100; i++) {
                     if (protocolStep >= 1) break;
@@ -805,9 +911,11 @@
                 }
                 if (protocolStep < 1) {
                     log('❌ Handshake (0x01) timeout');
+                    showUploadProgress(false);
                     return;
                 }
 
+                updateProgress(20, '크기 정보 전송 중...');
                 const sizeMsg = new Uint8Array(8);
                 sizeMsg[0] = 0x02;
                 const total = payload.length;
@@ -815,12 +923,19 @@
                 sizeMsg[2] = (total >> 8) & 0xff;
                 sizeMsg[3] = (total >> 16) & 0xff;
                 sizeMsg[4] = (total >> 24) & 0xff;
-                if (!await sendCommand(sizeMsg)) return;
+                if (!await sendCommand(sizeMsg)) {
+                    showUploadProgress(false);
+                    return;
+                }
                 await delay(100);
 
-                if (!await sendCommand([0x03])) return;
+                if (!await sendCommand([0x03])) {
+                    showUploadProgress(false);
+                    return;
+                }
 
                 const totalParts = Math.ceil(payload.length / partDataSize);
+                updateProgress(30, `데이터 전송 시작 (${totalParts} 패킷)...`);
                 log(`🚚 Sending ${totalParts} packets…`);
 
                 let currentPart = 0;
@@ -833,11 +948,14 @@
                     await delay(40);
 
                     if (protocolStep === 99) {
+                        updateProgress(100, '업로드 완료!');
                         log('🎉 Upload complete');
+                        setTimeout(() => showUploadProgress(false), 2000);
                         return;
                     }
                     if (protocolStep === -1) {
                         log('❌ Device aborted transfer');
+                        showUploadProgress(false);
                         return;
                     }
 
@@ -851,7 +969,14 @@
                         }
 
                         currentPart = currentAck;
-                        if (!await sendImagePart(currentPart)) return;
+                        if (!await sendImagePart(currentPart)) {
+                            showUploadProgress(false);
+                            return;
+                        }
+
+                        // Update progress bar
+                        const progressPercent = 30 + (currentPart / totalParts) * 60; // 30-90%
+                        updateProgress(progressPercent, `전송 중... ${currentPart}/${totalParts}`);
 
                         if (currentPart % 8 === 0) {
                             log(`📊 Progress ${currentPart}/${totalParts}`);
@@ -868,13 +993,27 @@
                 }
 
                 if (protocolStep === 99) {
+                    updateProgress(100, 'ESL 새로고침 완료!');
                     log('✅ ESL refresh complete');
+                    setTimeout(() => showUploadProgress(false), 2000);
                 } else {
                     log('⚠️ Transfer ended without final confirmation');
+                    showUploadProgress(false);
                 }
             } catch (error) {
                 log(`❌ Upload failed: ${error.message}`);
+                showUploadProgress(false);
             }
+        }
+
+        function showUploadProgress(show) {
+            document.getElementById('uploadProgress').style.display = show ? 'block' : 'none';
+            document.getElementById('uploadBtn').disabled = show;
+        }
+
+        function updateProgress(percent, text) {
+            document.getElementById('progressBar').style.width = `${percent}%`;
+            document.getElementById('progressText').textContent = text;
         }
 
         function prepareImageData() {
