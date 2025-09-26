@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEMR Electronic Shelf Label Image Uploader</title>
+    <style>
+        :root {
+            --primary-color: #2196F3;
+            --secondary-color: #FFC107;
+            --success-color: #4CAF50;
+            --error-color: #F44336;
+            --bg-color: #f5f5f5;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #dddddd;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #ffffff;
+            --border-color: #333333;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 2rem;
+        }
+
+        .theme-toggle {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+        }
+
+        .card h2 {
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        input, select, button {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--card-bg);
+            color: var(--text-color);
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+        }
+
+        button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.3);
+        }
+
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-success {
+            background: var(--success-color);
+        }
+
+        .btn-success:hover {
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
+        }
+
+        .canvas-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        canvas {
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            max-width: 100%;
+            background: white;
+        }
+
+        .connection-status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .connected {
+            background: rgba(76, 175, 80, 0.1);
+            color: var(--success-color);
+            border: 2px solid var(--success-color);
+        }
+
+        .disconnected {
+            background: rgba(244, 67, 54, 0.1);
+            color: var(--error-color);
+            border: 2px solid var(--error-color);
+        }
+
+        .device-filter {
+            background: rgba(255, 193, 7, 0.1);
+            border: 2px solid var(--secondary-color);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .drawing-tools {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .color-picker {
+            width: 50px !important;
+            height: 50px;
+            padding: 0;
+            border-radius: 50%;
+        }
+
+        .brush-size {
+            width: 80px !important;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background: rgba(33, 150, 243, 0.05);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--primary-color);
+            background: rgba(33, 150, 243, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+
+        .rotation-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 15px 0;
+        }
+
+        .rotate-btn {
+            width: auto !important;
+            padding: 8px 16px;
+            background: var(--secondary-color);
+            color: #333;
+        }
+
+        .rotate-btn:hover {
+            box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+        }
+
+        .log-area {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            height: 200px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏷️ NEMR Electronic Shelf Label Uploader</h1>
+            <button class="theme-toggle" onclick="toggleTheme()">🌙 Dark Mode</button>
+        </div>
+
+        <div class="device-filter">
+            <h3>🔍 NEMR Device Filter</h3>
+            <p>Only NEMR-labeled Bluetooth devices will be shown in device selection</p>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <h2>📱 Device Connection</h2>
+
+                <div id="connectionStatus" class="connection-status disconnected">
+                    ❌ Not Connected - Click Connect to start
+                </div>
+
+                <button id="connectBtn" onclick="connectDevice()">🔗 Connect to NEMR Device</button>
+                <button id="disconnectBtn" onclick="disconnectDevice()" style="display:none;">🔌 Disconnect</button>
+
+                <div class="form-group">
+                    <label>📏 Display Size:</label>
+                    <select id="displaySize" onchange="updateCanvasSize()">
+                        <option value="296x128">296x128 (2.9")</option>
+                        <option value="200x200">200x200 (1.54")</option>
+                        <option value="250x122">250x122 (2.13")</option>
+                        <option value="400x300">400x300 (4.2")</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>🎨 Image & Drawing Tools</h2>
+
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()"
+                     ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                    <p>📁 Click to upload image or drag & drop here</p>
+                    <input type="file" id="fileInput" accept="image/*" onchange="loadImage(event)" style="display:none;">
+                </div>
+
+                <div class="drawing-tools">
+                    <input type="color" id="colorPicker" value="#000000" class="color-picker">
+                    <input type="range" id="brushSize" min="1" max="20" value="3" class="brush-size">
+                    <button onclick="clearCanvas()">🗑️ Clear</button>
+                    <button onclick="toggleDrawing()">✏️ Draw</button>
+                </div>
+
+                <div class="rotation-controls">
+                    <button class="rotate-btn" onclick="rotateImage(-90)">↶ 90°</button>
+                    <button class="rotate-btn" onclick="rotateImage(90)">↷ 90°</button>
+                    <button class="rotate-btn" onclick="rotateImage(180)">↻ 180°</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🖼️ Preview</h2>
+            <div class="canvas-container">
+                <canvas id="canvas" width="296" height="128"></canvas>
+            </div>
+            <button id="uploadBtn" onclick="uploadToDevice()" disabled class="btn-success">
+                📤 Upload to ESL Device
+            </button>
+        </div>
+
+        <div class="log-area" id="logArea"></div>
+    </div>
+
+    <script>
+        // Global variables
+        let device = null;
+        let characteristic = null;
+        let canvas = null;
+        let ctx = null;
+        let isDrawing = false;
+        let drawingMode = false;
+        let currentRotation = 90; // Default rotation
+
+        // Theme toggle
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.dataset.theme;
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            body.dataset.theme = newTheme;
+
+            const btn = document.querySelector('.theme-toggle');
+            btn.textContent = newTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+
+            localStorage.setItem('theme', newTheme);
+        }
+
+        // Load saved theme
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.body.dataset.theme = savedTheme;
+
+            const btn = document.querySelector('.theme-toggle');
+            btn.textContent = savedTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+
+            initializeCanvas();
+        });
+
+        // Initialize canvas
+        function initializeCanvas() {
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+
+            // Set default canvas background to white
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Apply default rotation
+            rotateImage(currentRotation);
+
+            setupCanvasEvents();
+        }
+
+        // Setup canvas drawing events
+        function setupCanvasEvents() {
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+
+            // Touch events for mobile
+            canvas.addEventListener('touchstart', startDrawing);
+            canvas.addEventListener('touchmove', draw);
+            canvas.addEventListener('touchend', stopDrawing);
+        }
+
+        // Update canvas size
+        function updateCanvasSize() {
+            const size = document.getElementById('displaySize').value;
+            const [width, height] = size.split('x').map(Number);
+
+            canvas.width = width;
+            canvas.height = height;
+
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            log(`📏 Canvas size updated to ${width}x${height}`);
+        }
+
+        // Connect to NEMR device
+        async function connectDevice() {
+            try {
+                log('🔍 Searching for NEMR Bluetooth devices...');
+
+                // Request device with NEMR name filter
+                device = await navigator.bluetooth.requestDevice({
+                    filters: [{
+                        namePrefix: 'NEMR'
+                    }],
+                    optionalServices: ['0000fff0-0000-1000-8000-00805f9b34fb']
+                });
+
+                log(`📱 Found device: ${device.name}`);
+
+                const server = await device.gatt.connect();
+                log('🔗 Connected to GATT server');
+
+                const service = await server.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
+                characteristic = await service.getCharacteristic('0000fff1-0000-1000-8000-00805f9b34fb');
+
+                updateConnectionStatus(true);
+                document.getElementById('uploadBtn').disabled = false;
+
+                log('✅ Successfully connected to NEMR device');
+
+            } catch (error) {
+                log(`❌ Connection failed: ${error.message}`);
+                updateConnectionStatus(false);
+            }
+        }
+
+        // Disconnect device
+        function disconnectDevice() {
+            if (device && device.gatt.connected) {
+                device.gatt.disconnect();
+            }
+            updateConnectionStatus(false);
+            document.getElementById('uploadBtn').disabled = true;
+            log('🔌 Disconnected from device');
+        }
+
+        // Update connection status UI
+        function updateConnectionStatus(connected) {
+            const status = document.getElementById('connectionStatus');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+
+            if (connected) {
+                status.className = 'connection-status connected';
+                status.textContent = `✅ Connected to ${device.name}`;
+                connectBtn.style.display = 'none';
+                disconnectBtn.style.display = 'block';
+            } else {
+                status.className = 'connection-status disconnected';
+                status.textContent = '❌ Not Connected - Click Connect to start';
+                connectBtn.style.display = 'block';
+                disconnectBtn.style.display = 'none';
+            }
+        }
+
+        // Load image from file
+        function loadImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    // Clear canvas
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    // Calculate scaling to fit canvas
+                    const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+                    const x = (canvas.width - img.width * scale) / 2;
+                    const y = (canvas.height - img.height * scale) / 2;
+
+                    ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+                    log(`📷 Image loaded: ${file.name}`);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Handle drag and drop
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.currentTarget.classList.add('dragover');
+        }
+
+        function handleDragLeave(event) {
+            event.currentTarget.classList.remove('dragover');
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('dragover');
+
+            const files = event.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                const fakeEvent = { target: { files: files } };
+                loadImage(fakeEvent);
+            }
+        }
+
+        // Drawing functions
+        function toggleDrawing() {
+            drawingMode = !drawingMode;
+            const btn = event.target;
+            btn.textContent = drawingMode ? '🖼️ View' : '✏️ Draw';
+            canvas.style.cursor = drawingMode ? 'crosshair' : 'default';
+            log(`${drawingMode ? '✏️ Drawing mode enabled' : '🖼️ View mode enabled'}`);
+        }
+
+        function startDrawing(event) {
+            if (!drawingMode) return;
+            isDrawing = true;
+            draw(event);
+        }
+
+        function draw(event) {
+            if (!isDrawing || !drawingMode) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = (event.clientX || event.touches[0].clientX) - rect.left;
+            const y = (event.clientY || event.touches[0].clientY) - rect.top;
+
+            const color = document.getElementById('colorPicker').value;
+            const size = document.getElementById('brushSize').value;
+
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            log('🗑️ Canvas cleared');
+        }
+
+        // Rotation functions with default rotation
+        function rotateImage(degrees) {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+            // Create temporary canvas for rotation
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+
+            if (degrees === 90 || degrees === -90 || degrees === 270) {
+                tempCanvas.width = canvas.height;
+                tempCanvas.height = canvas.width;
+            } else {
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+            }
+
+            // Clear temp canvas
+            tempCtx.fillStyle = 'white';
+            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+            // Apply rotation
+            tempCtx.save();
+            tempCtx.translate(tempCanvas.width / 2, tempCanvas.height / 2);
+            tempCtx.rotate((degrees * Math.PI) / 180);
+            tempCtx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
+            tempCtx.restore();
+
+            // Update main canvas size if needed
+            if (degrees === 90 || degrees === -90 || degrees === 270) {
+                canvas.width = tempCanvas.width;
+                canvas.height = tempCanvas.height;
+            }
+
+            // Copy rotated image back
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(tempCanvas, 0, 0);
+
+            log(`🔄 Image rotated ${degrees}°`);
+        }
+
+        // Upload image to device
+        async function uploadToDevice() {
+            if (!characteristic) {
+                log('❌ No device connected');
+                return;
+            }
+
+            try {
+                log('📤 Preparing image for upload...');
+
+                // Convert canvas to black and white bitmap
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const bitmap = convertToBitmap(imageData);
+
+                log('📡 Sending image data to device...');
+
+                // Send bitmap data in chunks
+                const chunkSize = 20;
+                for (let i = 0; i < bitmap.length; i += chunkSize) {
+                    const chunk = bitmap.slice(i, i + chunkSize);
+                    await characteristic.writeValue(new Uint8Array(chunk));
+                    await new Promise(resolve => setTimeout(resolve, 10));
+                }
+
+                log('✅ Image successfully uploaded to ESL device!');
+
+            } catch (error) {
+                log(`❌ Upload failed: ${error.message}`);
+            }
+        }
+
+        // Convert image to black and white bitmap
+        function convertToBitmap(imageData) {
+            const data = imageData.data;
+            const width = imageData.width;
+            const height = imageData.height;
+            const bitmap = [];
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x += 8) {
+                    let byte = 0;
+
+                    for (let bit = 0; bit < 8 && x + bit < width; bit++) {
+                        const i = (y * width + x + bit) * 4;
+                        const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
+
+                        if (gray < 128) {
+                            byte |= (1 << (7 - bit));
+                        }
+                    }
+
+                    bitmap.push(byte);
+                }
+            }
+
+            return bitmap;
+        }
+
+        // Logging function
+        function log(message) {
+            const logArea = document.getElementById('logArea');
+            const timestamp = new Date().toLocaleTimeString();
+            logArea.innerHTML += `[${timestamp}] ${message}\n`;
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        // Check for Bluetooth support
+        if (!navigator.bluetooth) {
+            log('❌ Bluetooth API not supported in this browser');
+            document.getElementById('connectBtn').disabled = true;
+        }
+    </script>
+</body>
+</html>
