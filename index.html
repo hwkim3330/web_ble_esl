@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEMR Electronic Shelf Label Image Uploader</title>
+    <title>NEMR Electronic Shelf Label Uploader</title>
     <style>
         :root {
             --primary-color: #2196F3;
@@ -37,7 +37,7 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
         }
@@ -75,7 +75,7 @@
 
         .main-content {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 30px;
             margin-bottom: 30px;
         }
@@ -163,6 +163,15 @@
             background: white;
         }
 
+        .drawing-canvas {
+            border: 2px dashed var(--secondary-color);
+            cursor: crosshair;
+        }
+
+        .preview-canvas {
+            border: 2px solid var(--primary-color);
+        }
+
         .connection-status {
             padding: 15px;
             border-radius: 8px;
@@ -214,19 +223,6 @@
             color: white !important;
         }
 
-        #textControls {
-            margin-top: 15px;
-            display: flex;
-            gap: 10px;
-        }
-
-        .shape-preview {
-            position: absolute;
-            pointer-events: none;
-            border: 2px dashed var(--primary-color);
-            background: rgba(33, 150, 243, 0.1);
-        }
-
         .upload-area {
             border: 2px dashed var(--border-color);
             border-radius: 8px;
@@ -234,6 +230,7 @@
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
+            margin-bottom: 20px;
         }
 
         .upload-area:hover {
@@ -246,20 +243,10 @@
             background: rgba(33, 150, 243, 0.1);
         }
 
-        @media (max-width: 768px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-
-            .header {
-                flex-direction: column;
-                gap: 20px;
-                text-align: center;
-            }
-
-            h1 {
-                font-size: 1.5rem;
-            }
+        #textControls {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
         }
 
         .rotation-controls {
@@ -267,6 +254,7 @@
             gap: 10px;
             justify-content: center;
             margin: 15px 0;
+            flex-wrap: wrap;
         }
 
         .rotate-btn {
@@ -274,6 +262,8 @@
             padding: 8px 16px;
             background: var(--secondary-color);
             color: #333;
+            flex: 1;
+            min-width: 80px;
         }
 
         .rotate-btn:hover {
@@ -291,6 +281,28 @@
             overflow-y: auto;
             margin-top: 20px;
         }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -306,6 +318,7 @@
         </div>
 
         <div class="main-content">
+            <!-- Device Connection -->
             <div class="card">
                 <h2>📱 Device Connection</h2>
 
@@ -327,8 +340,9 @@
                 </div>
             </div>
 
+            <!-- Drawing Area -->
             <div class="card">
-                <h2>🎨 Image & Drawing Tools</h2>
+                <h2>🎨 Drawing & Tools</h2>
 
                 <div class="upload-area" onclick="document.getElementById('fileInput').click()"
                      ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
@@ -341,15 +355,19 @@
                     <input type="range" id="brushSize" min="1" max="20" value="3" class="brush-size">
                     <button onclick="setTool('brush')" id="brushBtn">🖌️ Brush</button>
                     <button onclick="setTool('eraser')" id="eraserBtn">🗑️ Eraser</button>
-                    <button onclick="setTool('line')" id="lineBtn">📏 Line</button>
                 </div>
 
                 <div class="drawing-tools">
+                    <button onclick="setTool('line')" id="lineBtn">📏 Line</button>
                     <button onclick="setTool('rectangle')" id="rectBtn">⬜ Rectangle</button>
                     <button onclick="setTool('circle')" id="circleBtn">⭕ Circle</button>
                     <button onclick="setTool('text')" id="textBtn">📝 Text</button>
-                    <button onclick="clearCanvas()">🗑️ Clear All</button>
+                </div>
+
+                <div class="drawing-tools">
+                    <button onclick="clearDrawingCanvas()">🗑️ Clear Drawing</button>
                     <button onclick="toggleDrawing()" id="drawToggle">✏️ Draw Mode</button>
+                    <button onclick="copyToPreview()">📋 Copy to Preview</button>
                 </div>
 
                 <div class="form-group" id="textControls" style="display:none;">
@@ -357,22 +375,31 @@
                     <input type="number" id="fontSize" value="16" min="8" max="72" style="width:25%;" placeholder="Size">
                 </div>
 
-                <div class="rotation-controls">
-                    <button class="rotate-btn" onclick="rotateImage(-90)">↶ 90°</button>
-                    <button class="rotate-btn" onclick="rotateImage(90)">↷ 90°</button>
-                    <button class="rotate-btn" onclick="rotateImage(180)">↻ 180°</button>
+                <h3>🖌️ Drawing Area</h3>
+                <div class="canvas-container">
+                    <canvas id="drawingCanvas" class="drawing-canvas" width="296" height="128"></canvas>
                 </div>
             </div>
-        </div>
 
-        <div class="card">
-            <h2>🖼️ Preview</h2>
-            <div class="canvas-container">
-                <canvas id="canvas" width="296" height="128"></canvas>
+            <!-- Preview & Upload -->
+            <div class="card">
+                <h2>🖼️ Preview & Upload</h2>
+
+                <div class="canvas-container">
+                    <canvas id="canvas" class="preview-canvas" width="296" height="128"></canvas>
+                </div>
+
+                <div class="rotation-controls">
+                    <button class="rotate-btn" onclick="rotatePreview(-90)">↶ 90°</button>
+                    <button class="rotate-btn" onclick="rotatePreview(90)">↷ 90°</button>
+                    <button class="rotate-btn" onclick="rotatePreview(180)">↻ 180°</button>
+                    <button onclick="clearPreviewCanvas()">🗑️ Clear Preview</button>
+                </div>
+
+                <button id="uploadBtn" onclick="uploadToDevice()" disabled class="btn-success">
+                    📤 Upload to ESL Device
+                </button>
             </div>
-            <button id="uploadBtn" onclick="uploadToDevice()" disabled class="btn-success">
-                📤 Upload to ESL Device
-            </button>
         </div>
 
         <div class="log-area" id="logArea"></div>
@@ -383,15 +410,15 @@
         let device = null;
         let cmdCharacteristic = null;
         let imgCharacteristic = null;
-        let canvas = null;
-        let ctx = null;
+        let canvas = null; // Preview canvas
+        let ctx = null;    // Preview context
+        let drawingCanvas = null; // Drawing canvas
+        let drawingCtx = null;    // Drawing context
         let isDrawing = false;
         let drawingMode = false;
         let currentTool = 'brush';
         let currentRotation = 90; // Default rotation
         let startX = 0, startY = 0;
-        let textMode = false;
-        let textX = 0, textY = 0;
 
         // ESL Protocol variables
         let partMsgSize = 244;
@@ -425,32 +452,42 @@
             initializeCanvas();
         });
 
-        // Initialize canvas
+        // Initialize canvases
         function initializeCanvas() {
+            // Preview canvas
             canvas = document.getElementById('canvas');
             ctx = canvas.getContext('2d');
 
-            // Set default canvas background to white
+            // Drawing canvas
+            drawingCanvas = document.getElementById('drawingCanvas');
+            drawingCtx = drawingCanvas.getContext('2d');
+
+            // Set default canvas backgrounds to white
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Apply default rotation
-            rotateImage(currentRotation);
+            drawingCtx.fillStyle = 'white';
+            drawingCtx.fillRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+
+            // Apply default rotation to preview
+            rotatePreview(currentRotation);
 
             setupCanvasEvents();
+            setTool('brush'); // Set default tool
         }
 
         // Setup canvas drawing events
         function setupCanvasEvents() {
-            canvas.addEventListener('mousedown', startDrawing);
-            canvas.addEventListener('mousemove', draw);
-            canvas.addEventListener('mouseup', stopDrawing);
-            canvas.addEventListener('mouseout', stopDrawing);
+            // Only drawing canvas should be interactive for drawing
+            drawingCanvas.addEventListener('mousedown', startDrawing);
+            drawingCanvas.addEventListener('mousemove', draw);
+            drawingCanvas.addEventListener('mouseup', stopDrawing);
+            drawingCanvas.addEventListener('mouseout', stopDrawing);
 
             // Touch events for mobile
-            canvas.addEventListener('touchstart', startDrawing);
-            canvas.addEventListener('touchmove', draw);
-            canvas.addEventListener('touchend', stopDrawing);
+            drawingCanvas.addEventListener('touchstart', startDrawing);
+            drawingCanvas.addEventListener('touchmove', draw);
+            drawingCanvas.addEventListener('touchend', stopDrawing);
         }
 
         // Update canvas size
@@ -458,13 +495,291 @@
             const size = document.getElementById('displaySize').value;
             const [width, height] = size.split('x').map(Number);
 
+            // Update both canvases
             canvas.width = width;
             canvas.height = height;
+            drawingCanvas.width = width;
+            drawingCanvas.height = height;
 
+            // Clear both canvases
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+            drawingCtx.fillStyle = 'white';
+            drawingCtx.fillRect(0, 0, drawingCanvas.width, drawingCanvas.height);
 
             log(`📏 Canvas size updated to ${width}x${height}`);
+        }
+
+        // Drawing functions
+        function toggleDrawing() {
+            drawingMode = !drawingMode;
+            const btn = document.getElementById('drawToggle');
+            btn.textContent = drawingMode ? '🖼️ View Mode' : '✏️ Draw Mode';
+
+            if (drawingMode) {
+                setTool('brush'); // Default to brush when entering draw mode
+            } else {
+                drawingCanvas.style.cursor = 'default';
+                hideTextControls();
+            }
+
+            log(`${drawingMode ? '✏️ Drawing mode enabled' : '🖼️ View mode enabled'}`);
+        }
+
+        function setTool(tool) {
+            if (!drawingMode && tool !== 'text') return;
+
+            currentTool = tool;
+
+            // Update button states
+            document.querySelectorAll('.drawing-tools button').forEach(btn => {
+                btn.classList.remove('tool-active');
+            });
+
+            const activeBtn = document.getElementById(tool + 'Btn');
+            if (activeBtn) activeBtn.classList.add('tool-active');
+
+            // Update cursor and controls
+            switch(tool) {
+                case 'brush':
+                    drawingCanvas.style.cursor = 'crosshair';
+                    hideTextControls();
+                    break;
+                case 'eraser':
+                    drawingCanvas.style.cursor = 'grab';
+                    hideTextControls();
+                    break;
+                case 'line':
+                case 'rectangle':
+                case 'circle':
+                    drawingCanvas.style.cursor = 'crosshair';
+                    hideTextControls();
+                    break;
+                case 'text':
+                    drawingCanvas.style.cursor = 'text';
+                    showTextControls();
+                    break;
+            }
+
+            log(`🔧 Tool changed to: ${tool}`);
+        }
+
+        function showTextControls() {
+            document.getElementById('textControls').style.display = 'flex';
+        }
+
+        function hideTextControls() {
+            document.getElementById('textControls').style.display = 'none';
+        }
+
+        // Drawing event handlers
+        function startDrawing(event) {
+            if (!drawingMode && currentTool !== 'text') return;
+
+            const rect = drawingCanvas.getBoundingClientRect();
+            startX = (event.clientX || event.touches[0].clientX) - rect.left;
+            startY = (event.clientY || event.touches[0].clientY) - rect.top;
+
+            if (currentTool === 'text') {
+                handleTextTool(startX, startY);
+                return;
+            }
+
+            isDrawing = true;
+
+            if (currentTool === 'brush' || currentTool === 'eraser') {
+                draw(event);
+            }
+        }
+
+        function draw(event) {
+            if (!drawingMode) return;
+
+            const rect = drawingCanvas.getBoundingClientRect();
+            const currentX = (event.clientX || event.touches[0].clientX) - rect.left;
+            const currentY = (event.clientY || event.touches[0].clientY) - rect.top;
+
+            const color = document.getElementById('colorPicker').value;
+            const size = parseInt(document.getElementById('brushSize').value);
+
+            if (currentTool === 'brush' && isDrawing) {
+                drawingCtx.globalCompositeOperation = 'source-over';
+                drawingCtx.fillStyle = color;
+                drawingCtx.beginPath();
+                drawingCtx.arc(currentX, currentY, size, 0, Math.PI * 2);
+                drawingCtx.fill();
+            } else if (currentTool === 'eraser' && isDrawing) {
+                drawingCtx.globalCompositeOperation = 'destination-out';
+                drawingCtx.beginPath();
+                drawingCtx.arc(currentX, currentY, size, 0, Math.PI * 2);
+                drawingCtx.fill();
+                drawingCtx.globalCompositeOperation = 'source-over';
+            }
+        }
+
+        function stopDrawing(event) {
+            if (!isDrawing || !drawingMode) return;
+            isDrawing = false;
+
+            const rect = drawingCanvas.getBoundingClientRect();
+            const endX = (event.clientX || event.touches[0].clientX) - rect.left;
+            const endY = (event.clientY || event.touches[0].clientY) - rect.top;
+
+            const color = document.getElementById('colorPicker').value;
+            const size = parseInt(document.getElementById('brushSize').value);
+
+            drawingCtx.strokeStyle = color;
+            drawingCtx.lineWidth = size;
+            drawingCtx.lineCap = 'round';
+
+            switch(currentTool) {
+                case 'line':
+                    drawingCtx.beginPath();
+                    drawingCtx.moveTo(startX, startY);
+                    drawingCtx.lineTo(endX, endY);
+                    drawingCtx.stroke();
+                    break;
+
+                case 'rectangle':
+                    drawingCtx.strokeRect(startX, startY, endX - startX, endY - startY);
+                    break;
+
+                case 'circle':
+                    const radius = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+                    drawingCtx.beginPath();
+                    drawingCtx.arc(startX, startY, radius, 0, Math.PI * 2);
+                    drawingCtx.stroke();
+                    break;
+            }
+        }
+
+        function handleTextTool(x, y) {
+            const text = document.getElementById('textInput').value;
+            const fontSize = parseInt(document.getElementById('fontSize').value);
+
+            if (!text.trim()) {
+                log('❌ Please enter text first');
+                return;
+            }
+
+            const color = document.getElementById('colorPicker').value;
+            drawingCtx.fillStyle = color;
+            drawingCtx.font = `${fontSize}px Arial, sans-serif`;
+            drawingCtx.textAlign = 'left';
+            drawingCtx.textBaseline = 'top';
+
+            drawingCtx.fillText(text, x, y);
+            document.getElementById('textInput').value = '';
+
+            log(`📝 Text added: "${text}" at (${Math.round(x)}, ${Math.round(y)})`);
+        }
+
+        // Canvas management
+        function clearDrawingCanvas() {
+            drawingCtx.fillStyle = 'white';
+            drawingCtx.fillRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+            log('🗑️ Drawing canvas cleared');
+        }
+
+        function clearPreviewCanvas() {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            log('🗑️ Preview canvas cleared');
+        }
+
+        function copyToPreview() {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(drawingCanvas, 0, 0);
+            log('📋 Drawing copied to preview');
+        }
+
+        // Load image from file
+        function loadImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    // Clear preview canvas
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    // Calculate scaling to fit canvas
+                    const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+                    const x = (canvas.width - img.width * scale) / 2;
+                    const y = (canvas.height - img.height * scale) / 2;
+
+                    ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+                    log(`📷 Image loaded: ${file.name}`);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Handle drag and drop
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.currentTarget.classList.add('dragover');
+        }
+
+        function handleDragLeave(event) {
+            event.currentTarget.classList.remove('dragover');
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('dragover');
+
+            const files = event.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                const fakeEvent = { target: { files: files } };
+                loadImage(fakeEvent);
+            }
+        }
+
+        // Rotation functions
+        function rotatePreview(degrees) {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+            // Create temporary canvas for rotation
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+
+            if (degrees === 90 || degrees === -90 || degrees === 270) {
+                tempCanvas.width = canvas.height;
+                tempCanvas.height = canvas.width;
+            } else {
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+            }
+
+            // Clear temp canvas
+            tempCtx.fillStyle = 'white';
+            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+            // Apply rotation
+            tempCtx.save();
+            tempCtx.translate(tempCanvas.width / 2, tempCanvas.height / 2);
+            tempCtx.rotate((degrees * Math.PI) / 180);
+            tempCtx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
+            tempCtx.restore();
+
+            // Update main canvas size if needed
+            if (degrees === 90 || degrees === -90 || degrees === 270) {
+                canvas.width = tempCanvas.width;
+                canvas.height = tempCanvas.height;
+            }
+
+            // Copy rotated image back
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(tempCanvas, 0, 0);
+
+            log(`🔄 Preview rotated ${degrees}°`);
         }
 
         // Connect to NEMR device
@@ -531,270 +846,6 @@
                 connectBtn.style.display = 'block';
                 disconnectBtn.style.display = 'none';
             }
-        }
-
-        // Load image from file
-        function loadImage(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    // Clear canvas
-                    ctx.fillStyle = 'white';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                    // Calculate scaling to fit canvas
-                    const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
-                    const x = (canvas.width - img.width * scale) / 2;
-                    const y = (canvas.height - img.height * scale) / 2;
-
-                    ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
-                    log(`📷 Image loaded: ${file.name}`);
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        // Handle drag and drop
-        function handleDragOver(event) {
-            event.preventDefault();
-            event.currentTarget.classList.add('dragover');
-        }
-
-        function handleDragLeave(event) {
-            event.currentTarget.classList.remove('dragover');
-        }
-
-        function handleDrop(event) {
-            event.preventDefault();
-            event.currentTarget.classList.remove('dragover');
-
-            const files = event.dataTransfer.files;
-            if (files.length > 0 && files[0].type.startsWith('image/')) {
-                const fakeEvent = { target: { files: files } };
-                loadImage(fakeEvent);
-            }
-        }
-
-        // Drawing functions
-        function toggleDrawing() {
-            drawingMode = !drawingMode;
-            const btn = document.getElementById('drawToggle');
-            btn.textContent = drawingMode ? '🖼️ View Mode' : '✏️ Draw Mode';
-
-            if (drawingMode) {
-                setTool('brush'); // Default to brush when entering draw mode
-            } else {
-                canvas.style.cursor = 'default';
-                hideTextControls();
-            }
-
-            log(`${drawingMode ? '✏️ Drawing mode enabled' : '🖼️ View mode enabled'}`);
-        }
-
-        function setTool(tool) {
-            if (!drawingMode && tool !== 'text') return;
-
-            currentTool = tool;
-
-            // Update button states
-            document.querySelectorAll('.drawing-tools button').forEach(btn => {
-                btn.classList.remove('tool-active');
-            });
-
-            const activeBtn = document.getElementById(tool + 'Btn') ||
-                             document.getElementById(tool === 'brush' ? 'brushBtn' :
-                                                  tool === 'eraser' ? 'eraserBtn' :
-                                                  tool === 'line' ? 'lineBtn' :
-                                                  tool === 'rectangle' ? 'rectBtn' :
-                                                  tool === 'circle' ? 'circleBtn' :
-                                                  tool === 'text' ? 'textBtn' : null);
-
-            if (activeBtn) activeBtn.classList.add('tool-active');
-
-            // Update cursor and controls
-            switch(tool) {
-                case 'brush':
-                    canvas.style.cursor = 'crosshair';
-                    hideTextControls();
-                    break;
-                case 'eraser':
-                    canvas.style.cursor = 'grab';
-                    hideTextControls();
-                    break;
-                case 'line':
-                case 'rectangle':
-                case 'circle':
-                    canvas.style.cursor = 'crosshair';
-                    hideTextControls();
-                    break;
-                case 'text':
-                    canvas.style.cursor = 'text';
-                    showTextControls();
-                    break;
-            }
-
-            log(`🔧 Tool changed to: ${tool}`);
-        }
-
-        function showTextControls() {
-            document.getElementById('textControls').style.display = 'block';
-        }
-
-        function hideTextControls() {
-            document.getElementById('textControls').style.display = 'none';
-        }
-
-        function startDrawing(event) {
-            if (!drawingMode && currentTool !== 'text') return;
-
-            const rect = canvas.getBoundingClientRect();
-            startX = (event.clientX || event.touches[0].clientX) - rect.left;
-            startY = (event.clientY || event.touches[0].clientY) - rect.top;
-
-            if (currentTool === 'text') {
-                handleTextTool(startX, startY);
-                return;
-            }
-
-            isDrawing = true;
-
-            if (currentTool === 'brush' || currentTool === 'eraser') {
-                draw(event);
-            }
-        }
-
-        function draw(event) {
-            if (!drawingMode) return;
-
-            const rect = canvas.getBoundingClientRect();
-            const currentX = (event.clientX || event.touches[0].clientX) - rect.left;
-            const currentY = (event.clientY || event.touches[0].clientY) - rect.top;
-
-            const color = document.getElementById('colorPicker').value;
-            const size = parseInt(document.getElementById('brushSize').value);
-
-            if (currentTool === 'brush' && isDrawing) {
-                ctx.globalCompositeOperation = 'source-over';
-                ctx.fillStyle = color;
-                ctx.beginPath();
-                ctx.arc(currentX, currentY, size, 0, Math.PI * 2);
-                ctx.fill();
-            } else if (currentTool === 'eraser' && isDrawing) {
-                ctx.globalCompositeOperation = 'destination-out';
-                ctx.beginPath();
-                ctx.arc(currentX, currentY, size, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.globalCompositeOperation = 'source-over';
-            }
-        }
-
-        function stopDrawing(event) {
-            if (!isDrawing || !drawingMode) return;
-            isDrawing = false;
-
-            const rect = canvas.getBoundingClientRect();
-            const endX = (event.clientX || event.touches[0].clientX) - rect.left;
-            const endY = (event.clientY || event.touches[0].clientY) - rect.top;
-
-            const color = document.getElementById('colorPicker').value;
-            const size = parseInt(document.getElementById('brushSize').value);
-
-            ctx.strokeStyle = color;
-            ctx.lineWidth = size;
-            ctx.lineCap = 'round';
-
-            switch(currentTool) {
-                case 'line':
-                    ctx.beginPath();
-                    ctx.moveTo(startX, startY);
-                    ctx.lineTo(endX, endY);
-                    ctx.stroke();
-                    break;
-
-                case 'rectangle':
-                    ctx.strokeRect(startX, startY, endX - startX, endY - startY);
-                    break;
-
-                case 'circle':
-                    const radius = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
-                    ctx.beginPath();
-                    ctx.arc(startX, startY, radius, 0, Math.PI * 2);
-                    ctx.stroke();
-                    break;
-            }
-        }
-
-        function handleTextTool(x, y) {
-            const text = document.getElementById('textInput').value;
-            const fontSize = parseInt(document.getElementById('fontSize').value);
-
-            if (!text.trim()) {
-                log('❌ Please enter text first');
-                return;
-            }
-
-            const color = document.getElementById('colorPicker').value;
-            ctx.fillStyle = color;
-            ctx.font = `${fontSize}px Arial, sans-serif`;
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'top';
-
-            ctx.fillText(text, x, y);
-            document.getElementById('textInput').value = '';
-
-            log(`📝 Text added: "${text}" at (${Math.round(x)}, ${Math.round(y)})`);
-        }
-
-        function clearCanvas() {
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            log('🗑️ Canvas cleared');
-        }
-
-        // Rotation functions with default rotation
-        function rotateImage(degrees) {
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-            // Create temporary canvas for rotation
-            const tempCanvas = document.createElement('canvas');
-            const tempCtx = tempCanvas.getContext('2d');
-
-            if (degrees === 90 || degrees === -90 || degrees === 270) {
-                tempCanvas.width = canvas.height;
-                tempCanvas.height = canvas.width;
-            } else {
-                tempCanvas.width = canvas.width;
-                tempCanvas.height = canvas.height;
-            }
-
-            // Clear temp canvas
-            tempCtx.fillStyle = 'white';
-            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-
-            // Apply rotation
-            tempCtx.save();
-            tempCtx.translate(tempCanvas.width / 2, tempCanvas.height / 2);
-            tempCtx.rotate((degrees * Math.PI) / 180);
-            tempCtx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
-            tempCtx.restore();
-
-            // Update main canvas size if needed
-            if (degrees === 90 || degrees === -90 || degrees === 270) {
-                canvas.width = tempCanvas.width;
-                canvas.height = tempCanvas.height;
-            }
-
-            // Copy rotated image back
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(tempCanvas, 0, 0);
-
-            log(`🔄 Image rotated ${degrees}°`);
         }
 
         // ESL Protocol Implementation
@@ -996,7 +1047,7 @@
             }
         }
 
-        // Convert image to ESL BWR bitmap format (matches Arduino implementation)
+        // Convert image to ESL BWR bitmap format (FIXED VERSION)
         function convertToESLBitmap(imageData) {
             const data = imageData.data;
             const width = imageData.width;
@@ -1014,7 +1065,7 @@
                 return (buffer[idx] & mask) !== 0;
             }
 
-            // Create BW buffer
+            // Create BW buffer (BLACK pixels should be 0, WHITE pixels should be 1)
             const bwBuffer = new Uint8Array(bytesPerRow * height);
             for (let y = 0; y < height; y++) {
                 for (let x = 0; x < width; x++) {
@@ -1032,10 +1083,29 @@
                 }
             }
 
-            // Create RED buffer (for now, just empty - could detect red colors later)
+            // Create RED buffer - should be mostly empty (WHITE=1) for normal images
             const redBuffer = new Uint8Array(bytesPerRow * height);
-            // Fill with white for now
-            redBuffer.fill(0xFF);
+            redBuffer.fill(0xFF); // Start with all WHITE (no red pixels)
+
+            // Optionally detect red pixels in the image
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const i = (y * width + x) * 4;
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+
+                    // Detect red pixels (red dominant and not white/gray)
+                    const isRed = r > 150 && r > (g + b) * 1.5 && (r + g + b) < 600;
+
+                    if (isRed) {
+                        const actualX = mirrorX ? (width - 1 - x) : x;
+                        const idx = y * bytesPerRow + Math.floor(actualX / 8);
+                        const mask = 0x80 >> (actualX % 8);
+                        redBuffer[idx] &= ~mask; // Clear bit for red pixel (0 = RED, 1 = WHITE)
+                    }
+                }
+            }
 
             // Pack according to ESL format: for each X column, pack 16 bytes (128 bits) for BW, then 16 bytes for RED
             for (let x = 0; x < width; x++) {
@@ -1089,11 +1159,6 @@
         } else {
             log('✅ Bluetooth Web API supported');
         }
-
-        // Initialize with default tool
-        document.addEventListener('DOMContentLoaded', function() {
-            setTool('brush'); // Set default tool
-        });
     </script>
 </body>
 </html>
