@@ -3,24 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEMR Electronic Shelf Label Uploader</title>
+    <title>NEMR 2.9\" ESL Uploader</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js" integrity="sha512-jXDHfc4we1GDpB4AOPtY1zNtElK+dy3iTFPX83yq3VU7PHhlLj4DHMm9G88qmwRaMBOti2KeDjgrvvTtsuKWZw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
         :root {
-            --primary-color: #2196F3;
-            --secondary-color: #FFC107;
-            --success-color: #4CAF50;
-            --error-color: #F44336;
-            --bg-color: #f5f5f5;
+            --primary-color: #1976d2;
+            --secondary-color: #ffc107;
+            --success-color: #2e7d32;
+            --error-color: #d32f2f;
+            --bg-color: #f4f6fb;
             --card-bg: #ffffff;
-            --text-color: #333333;
-            --border-color: #dddddd;
+            --text-color: #1f2933;
+            --border-color: #d6dee6;
         }
 
         [data-theme="dark"] {
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
-            --text-color: #ffffff;
-            --border-color: #333333;
+            --bg-color: #0f172a;
+            --card-bg: #111827;
+            --text-color: #e2e8f0;
+            --border-color: #1f2937;
         }
 
         * {
@@ -31,115 +32,108 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
+            background: var(--bg-color);
             color: var(--text-color);
-            transition: all 0.3s ease;
+            min-height: 100vh;
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 24px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+            padding: 24px;
         }
 
         .header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            align-items: flex-start;
+            gap: 24px;
+            margin-bottom: 24px;
         }
 
         h1 {
+            font-size: 1.9rem;
             color: var(--primary-color);
-            font-size: 2rem;
+        }
+
+        .subtitle {
+            margin-top: 6px;
+            font-size: 0.95rem;
+            color: var(--text-color);
+            opacity: 0.75;
         }
 
         .theme-toggle {
-            background: var(--primary-color);
-            color: white;
             border: none;
+            border-radius: 999px;
             padding: 10px 20px;
-            border-radius: 25px;
+            background: var(--primary-color);
+            color: #fff;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
         .theme-toggle:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+            box-shadow: 0 10px 22px rgba(25, 118, 210, 0.35);
         }
 
-        .main-content {
+        .layout {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 30px;
-        }
-
-        .card {
-            background: var(--card-bg);
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            border: 1px solid var(--border-color);
-        }
-
-        .card h2 {
-            margin-bottom: 20px;
-            color: var(--primary-color);
-            border-bottom: 2px solid var(--primary-color);
-            padding-bottom: 10px;
+            grid-template-columns: 320px 1fr;
+            gap: 24px;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-top: 18px;
         }
 
         label {
             display: block;
-            margin-bottom: 8px;
             font-weight: 600;
+            margin-bottom: 8px;
         }
 
-        input, select, button {
+        select, input[type="number"], input[type="text"] {
             width: 100%;
-            padding: 12px;
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
             background: var(--card-bg);
             color: var(--text-color);
-            font-size: 16px;
-            transition: all 0.3s ease;
-        }
-
-        input:focus, select:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+            font-size: 15px;
         }
 
         button {
-            background: var(--primary-color);
-            color: white;
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
             border: none;
-            cursor: pointer;
             font-weight: 600;
-            margin-bottom: 10px;
+            cursor: pointer;
+            background: var(--primary-color);
+            color: #fff;
+            margin-top: 12px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
-        button:hover {
+        button:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.3);
+            box-shadow: 0 10px 22px rgba(25, 118, 210, 0.3);
         }
 
         button:disabled {
-            background: #cccccc;
+            background: #98a2b3;
             cursor: not-allowed;
-            transform: none;
             box-shadow: none;
         }
 
@@ -147,280 +141,233 @@
             background: var(--success-color);
         }
 
-        .btn-success:hover {
-            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
-        }
-
-        .canvas-container {
-            text-align: center;
-            margin: 20px 0;
-        }
-
-        canvas {
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            max-width: 100%;
-            background: white;
-        }
-
-        .drawing-canvas {
-            border: 2px dashed var(--secondary-color);
-            cursor: crosshair;
-        }
-
-        .preview-canvas {
-            border: 2px solid var(--primary-color);
-        }
-
-        .connection-status {
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
+        .status {
+            padding: 14px;
+            border-radius: 12px;
             font-weight: 600;
             text-align: center;
+            border: 1px solid;
         }
 
-        .connected {
-            background: rgba(76, 175, 80, 0.1);
-            color: var(--success-color);
-            border: 2px solid var(--success-color);
-        }
-
-        .disconnected {
-            background: rgba(244, 67, 54, 0.1);
+        .status.disconnected {
+            border-color: rgba(211, 47, 47, 0.4);
+            background: rgba(211, 47, 47, 0.08);
             color: var(--error-color);
-            border: 2px solid var(--error-color);
         }
 
-        .device-filter {
-            background: rgba(255, 193, 7, 0.1);
-            border: 2px solid var(--secondary-color);
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
+        .status.connected {
+            border-color: rgba(46, 125, 50, 0.4);
+            background: rgba(46, 125, 50, 0.1);
+            color: var(--success-color);
         }
 
-        .drawing-tools {
+        .hint {
+            margin-top: 6px;
+            font-size: 0.85rem;
+            color: var(--text-color);
+            opacity: 0.7;
+        }
+
+        .canvas-card header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .toolbar {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             gap: 10px;
-            margin-bottom: 20px;
+            margin-top: 16px;
         }
 
         .color-picker {
-            width: 50px !important;
-            height: 50px;
-            padding: 0;
+            width: 52px;
+            height: 52px;
             border-radius: 50%;
+            border: none;
+            padding: 0;
+            cursor: pointer;
         }
 
-        .brush-size {
-            width: 80px !important;
+        .slider-group {
+            background: rgba(25, 118, 210, 0.08);
+            border: 1px solid rgba(25, 118, 210, 0.15);
+            border-radius: 12px;
+            padding: 10px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 0.9rem;
         }
 
-        .tool-active {
-            background: var(--success-color) !important;
-            color: white !important;
+        .slider-group input[type="range"] {
+            width: 100%;
+        }
+
+        .tool-button {
+            width: 100%;
+            background: rgba(25, 118, 210, 0.08);
+            color: var(--text-color);
+        }
+
+        .tool-button.active {
+            background: var(--primary-color);
+            color: #fff;
+        }
+
+        .text-controls {
+            display: none;
+            margin-top: 16px;
+            gap: 10px;
+        }
+
+        .text-controls input[type="text"] {
+            flex: 1;
+        }
+
+        .canvas-wrapper {
+            margin-top: 18px;
+            padding: 18px;
+            border-radius: 16px;
+            background: rgba(15, 23, 42, 0.04);
+            border: 1px dashed var(--border-color);
+            display: flex;
+            justify-content: center;
+        }
+
+        canvas {
+            background: #ffffff;
+            border-radius: 8px;
+            border: 2px solid rgba(15, 23, 42, 0.1);
         }
 
         .upload-area {
+            margin-top: 12px;
+            padding: 18px;
+            border-radius: 12px;
             border: 2px dashed var(--border-color);
-            border-radius: 8px;
-            padding: 40px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 20px;
-        }
-
-        .upload-area:hover {
-            border-color: var(--primary-color);
-            background: rgba(33, 150, 243, 0.05);
+            transition: border-color 0.2s ease, background 0.2s ease;
         }
 
         .upload-area.dragover {
             border-color: var(--primary-color);
-            background: rgba(33, 150, 243, 0.1);
+            background: rgba(25, 118, 210, 0.08);
         }
 
-        #textControls {
-            margin-top: 15px;
-            display: flex;
-            gap: 10px;
+        .log-card {
+            margin-top: 24px;
         }
 
-        .rotation-controls {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            margin: 15px 0;
-            flex-wrap: wrap;
-        }
-
-        .rotate-btn {
-            width: auto !important;
-            padding: 8px 16px;
-            background: var(--secondary-color);
-            color: #333;
-            flex: 1;
-            min-width: 80px;
-        }
-
-        .rotate-btn:hover {
-            box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
-        }
-
-        .log-area {
-            background: #1e1e1e;
-            color: #00ff00;
-            padding: 15px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            height: 200px;
+        #logArea {
+            margin-top: 12px;
+            background: #0b1729;
+            color: #7cf29c;
+            border-radius: 12px;
+            padding: 16px;
+            height: 220px;
             overflow-y: auto;
-            margin-top: 20px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.85rem;
+            white-space: pre-wrap;
         }
 
-        @media (max-width: 1200px) {
-            .main-content {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .main-content {
+        @media (max-width: 980px) {
+            .layout {
                 grid-template-columns: 1fr;
-            }
-
-            .header {
-                flex-direction: column;
-                gap: 20px;
-                text-align: center;
-            }
-
-            h1 {
-                font-size: 1.5rem;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🏷️ NEMR Electronic Shelf Label Uploader</h1>
+        <div class="card header">
+            <div>
+                <h1>🏷️ NEMR 2.9" ESL Uploader</h1>
+                <p class="subtitle">Fabric.js 기반 드로잉 · 296×128 해상도 · 안정적인 BLE 프로토콜</p>
+            </div>
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Dark Mode</button>
         </div>
 
-        <div class="device-filter">
-            <h3>🔍 NEMR Device Filter</h3>
-            <p>Only NEMR-labeled Bluetooth devices will be shown in device selection</p>
-        </div>
-
-        <div class="main-content">
-            <!-- Device Connection -->
-            <div class="card">
-                <h2>📱 Device Connection</h2>
-
-                <div id="connectionStatus" class="connection-status disconnected">
-                    ❌ Not Connected - Click Connect to start
-                </div>
-
+        <div class="layout">
+            <div class="card control-card">
+                <h2>📡 Device & Upload</h2>
+                <div id="connectionStatus" class="status disconnected">❌ Not connected</div>
                 <button id="connectBtn" onclick="connectDevice()">🔗 Connect to NEMR Device</button>
                 <button id="disconnectBtn" onclick="disconnectDevice()" style="display:none;">🔌 Disconnect</button>
 
                 <div class="form-group">
-                    <label>📏 Display Size:</label>
-                    <select id="displaySize" onchange="updateCanvasSize()">
-                        <option value="296x128">296x128 (2.9")</option>
-                        <option value="200x200">200x200 (1.54")</option>
-                        <option value="250x122">250x122 (2.13")</option>
-                        <option value="400x300">400x300 (4.2")</option>
+                    <label for="rotationSelect">Orientation</label>
+                    <select id="rotationSelect">
+                        <option value="0">Landscape (0°)</option>
+                        <option value="180">Flip 180°</option>
                     </select>
+                    <p class="hint">2.9" 패널은 기본적으로 가로모드입니다. 거꾸로 설치한 경우 180°를 사용하세요.</p>
                 </div>
+
+                <button id="uploadBtn" class="btn-success" onclick="uploadToDevice()" disabled>📤 Upload to ESL</button>
+                <button onclick="downloadCanvas()">💾 Download PNG</button>
+                <button onclick="clearCanvas()">🗑️ Clear Canvas</button>
+                <button onclick="addDemoLayout()">✨ Sample Layout</button>
             </div>
 
-            <!-- Drawing Area -->
-            <div class="card">
-                <h2>🎨 Drawing & Tools</h2>
+            <div class="card canvas-card">
+                <h2>🎨 Drawing Canvas</h2>
+                <p class="hint">Fabric.js 캔버스 크기: 296 × 128 px (2.9" ESL 해상도 고정)</p>
 
-                <div class="upload-area" onclick="document.getElementById('fileInput').click()"
-                     ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
-                    <p>📁 Click to upload image or drag & drop here</p>
+                <div id="uploadArea" class="upload-area" onclick="document.getElementById('fileInput').click()"
+                     ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+                    <strong>📁 이미지 불러오기</strong>
+                    <p>클릭하여 선택하거나, 이미지를 끌어다 놓으세요.</p>
                     <input type="file" id="fileInput" accept="image/*" onchange="loadImage(event)" style="display:none;">
                 </div>
 
-                <div class="drawing-tools">
-                    <input type="color" id="colorPicker" value="#000000" class="color-picker">
-                    <input type="range" id="brushSize" min="1" max="20" value="3" class="brush-size">
-                    <button onclick="setTool('brush')" id="brushBtn">🖌️ Brush</button>
-                    <button onclick="setTool('eraser')" id="eraserBtn">🗑️ Eraser</button>
+                <div class="toolbar">
+                    <input type="color" id="colorPicker" class="color-picker" value="#000000" onchange="updateBrushColor(this.value)">
+
+                    <div class="slider-group">
+                        <span>Brush Size: <strong id="brushSizeValue">5</strong> px</span>
+                        <input type="range" id="brushSize" min="1" max="40" value="5" oninput="updateBrushSize(this.value)">
+                    </div>
+
+                    <button id="brushBtn" class="tool-button active" onclick="setTool('brush')">🖌️ Brush</button>
+                    <button id="eraserBtn" class="tool-button" onclick="setTool('eraser')">🩹 Eraser</button>
+                    <button id="rectBtn" class="tool-button" onclick="addShape('rect')">⬜ Rectangle</button>
+                    <button id="circleBtn" class="tool-button" onclick="addShape('circle')">⭕ Circle</button>
+                    <button id="lineBtn" class="tool-button" onclick="addShape('line')">📏 Line</button>
+                    <button id="textBtn" class="tool-button" onclick="setTool('text')">📝 Text</button>
                 </div>
 
-                <div class="drawing-tools">
-                    <button onclick="setTool('line')" id="lineBtn">📏 Line</button>
-                    <button onclick="setTool('rectangle')" id="rectBtn">⬜ Rectangle</button>
-                    <button onclick="setTool('circle')" id="circleBtn">⭕ Circle</button>
-                    <button onclick="setTool('text')" id="textBtn">📝 Text</button>
+                <div class="text-controls" id="textControls">
+                    <input type="text" id="textInput" placeholder="텍스트를 입력하세요" value="NEMR ESL">
+                    <input type="number" id="fontSize" min="10" max="64" value="20">
+                    <button onclick="commitText()">추가</button>
                 </div>
 
-                <div class="drawing-tools">
-                    <button onclick="clearDrawingCanvas()">🗑️ Clear Drawing</button>
-                    <button onclick="toggleDrawing()" id="drawToggle">✏️ Draw Mode</button>
-                    <button onclick="copyToPreview()">📋 Copy to Preview</button>
+                <div class="canvas-wrapper">
+                    <canvas id="drawingCanvas" width="296" height="128"></canvas>
                 </div>
-
-                <div class="form-group" id="textControls" style="display:none;">
-                    <input type="text" id="textInput" placeholder="Enter text..." style="width:70%;">
-                    <input type="number" id="fontSize" value="16" min="8" max="72" style="width:25%;" placeholder="Size">
-                </div>
-
-                <h3>🖌️ Drawing Area</h3>
-                <div class="canvas-container">
-                    <canvas id="drawingCanvas" class="drawing-canvas" width="296" height="128"></canvas>
-                </div>
-            </div>
-
-            <!-- Preview & Upload -->
-            <div class="card">
-                <h2>🖼️ Preview & Upload</h2>
-
-                <div class="canvas-container">
-                    <canvas id="canvas" class="preview-canvas" width="296" height="128"></canvas>
-                </div>
-
-                <div class="rotation-controls">
-                    <button class="rotate-btn" onclick="rotatePreview(-90)">↶ 90°</button>
-                    <button class="rotate-btn" onclick="rotatePreview(90)">↷ 90°</button>
-                    <button class="rotate-btn" onclick="rotatePreview(180)">↻ 180°</button>
-                    <button onclick="clearPreviewCanvas()">🗑️ Clear Preview</button>
-                </div>
-
-                <button id="uploadBtn" onclick="uploadToDevice()" disabled class="btn-success">
-                    📤 Upload to ESL Device
-                </button>
             </div>
         </div>
 
-        <div class="log-area" id="logArea"></div>
+        <div class="card log-card">
+            <h2>📝 Activity Log</h2>
+            <div id="logArea"></div>
+        </div>
     </div>
 
     <script>
-        // Global variables
+        const ESL_WIDTH = 296;
+        const ESL_HEIGHT = 128;
+
+        let fabricCanvas = null;
+        let currentTool = 'brush';
         let device = null;
         let cmdCharacteristic = null;
         let imgCharacteristic = null;
-        let canvas = null; // Preview canvas
-        let ctx = null;    // Preview context
-        let drawingCanvas = null; // Drawing canvas
-        let drawingCtx = null;    // Drawing context
-        let isDrawing = false;
-        let drawingMode = false;
-        let currentTool = 'brush';
-        let currentRotation = 90; // Default rotation
-        let startX = 0, startY = 0;
 
-        // ESL Protocol variables
         let partMsgSize = 244;
         let partDataSize = 240;
         let payload = [];
@@ -428,140 +375,135 @@
         let currentAck = 0;
         let protocolStep = 0;
 
-        // Theme toggle
-        function toggleTheme() {
-            const body = document.body;
-            const currentTheme = body.dataset.theme;
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            body.dataset.theme = newTheme;
-
-            const btn = document.querySelector('.theme-toggle');
-            btn.textContent = newTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
-
-            localStorage.setItem('theme', newTheme);
-        }
-
-        // Load saved theme
-        document.addEventListener('DOMContentLoaded', function() {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.body.dataset.theme = savedTheme;
-
-            const btn = document.querySelector('.theme-toggle');
-            btn.textContent = savedTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
-
-            initializeCanvas();
+        document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            initCanvas();
+            log('✅ Ready – Fabric.js canvas initialised for 296×128 ESL');
+            log('💡 Draw freely, 가져온 이미지를 배치하고 업로드하세요.');
         });
 
-        // Initialize canvases
-        function initializeCanvas() {
-            // Preview canvas
-            canvas = document.getElementById('canvas');
-            ctx = canvas.getContext('2d');
-
-            // Drawing canvas
-            drawingCanvas = document.getElementById('drawingCanvas');
-            drawingCtx = drawingCanvas.getContext('2d');
-
-            // Set default canvas backgrounds to white
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            drawingCtx.fillStyle = 'white';
-            drawingCtx.fillRect(0, 0, drawingCanvas.width, drawingCanvas.height);
-
-            // Apply default rotation to preview
-            rotatePreview(currentRotation);
-
-            setupCanvasEvents();
-            setTool('brush'); // Set default tool
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.body.dataset.theme = savedTheme;
+            const btn = document.querySelector('.theme-toggle');
+            btn.textContent = savedTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
         }
 
-        // Setup canvas drawing events
-        function setupCanvasEvents() {
-            // Only drawing canvas should be interactive for drawing
-            drawingCanvas.addEventListener('mousedown', startDrawing);
-            drawingCanvas.addEventListener('mousemove', draw);
-            drawingCanvas.addEventListener('mouseup', stopDrawing);
-            drawingCanvas.addEventListener('mouseout', stopDrawing);
-
-            // Touch events for mobile
-            drawingCanvas.addEventListener('touchstart', startDrawing);
-            drawingCanvas.addEventListener('touchmove', draw);
-            drawingCanvas.addEventListener('touchend', stopDrawing);
+        function toggleTheme() {
+            const body = document.body;
+            const next = body.dataset.theme === 'dark' ? 'light' : 'dark';
+            body.dataset.theme = next;
+            localStorage.setItem('theme', next);
+            const btn = document.querySelector('.theme-toggle');
+            btn.textContent = next === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
         }
 
-        // Update canvas size
-        function updateCanvasSize() {
-            const size = document.getElementById('displaySize').value;
-            const [width, height] = size.split('x').map(Number);
+        function initCanvas() {
+            fabricCanvas = new fabric.Canvas('drawingCanvas', {
+                width: ESL_WIDTH,
+                height: ESL_HEIGHT,
+                backgroundColor: '#ffffff',
+                selection: true,
+                preserveObjectStacking: true
+            });
 
-            // Update both canvases
-            canvas.width = width;
-            canvas.height = height;
-            drawingCanvas.width = width;
-            drawingCanvas.height = height;
+            fabricCanvas.freeDrawingBrush = new fabric.PencilBrush(fabricCanvas);
+            fabricCanvas.freeDrawingBrush.width = 5;
+            fabricCanvas.freeDrawingBrush.color = '#000000';
+            fabricCanvas.isDrawingMode = true;
 
-            // Clear both canvases
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            drawingCtx.fillStyle = 'white';
-            drawingCtx.fillRect(0, 0, drawingCanvas.width, drawingCanvas.height);
-
-            log(`📏 Canvas size updated to ${width}x${height}`);
-        }
-
-        // Drawing functions
-        function toggleDrawing() {
-            drawingMode = !drawingMode;
-            const btn = document.getElementById('drawToggle');
-            btn.textContent = drawingMode ? '🖼️ View Mode' : '✏️ Draw Mode';
-
-            if (drawingMode) {
-                setTool('brush'); // Default to brush when entering draw mode
-            } else {
-                drawingCanvas.style.cursor = 'default';
-                hideTextControls();
-            }
-
-            log(`${drawingMode ? '✏️ Drawing mode enabled' : '🖼️ View mode enabled'}`);
+            fabricCanvas.on('mouse:down', (opt) => {
+                if (currentTool === 'text') {
+                    const pointer = fabricCanvas.getPointer(opt.e);
+                    addTextAt(pointer.x, pointer.y);
+                }
+            });
         }
 
         function setTool(tool) {
-            if (!drawingMode && tool !== 'text') return;
-
             currentTool = tool;
+            document.querySelectorAll('.tool-button').forEach(btn => btn.classList.remove('active'));
 
-            // Update button states
-            document.querySelectorAll('.drawing-tools button').forEach(btn => {
-                btn.classList.remove('tool-active');
-            });
-
-            const activeBtn = document.getElementById(tool + 'Btn');
-            if (activeBtn) activeBtn.classList.add('tool-active');
-
-            // Update cursor and controls
-            switch(tool) {
+            switch (tool) {
                 case 'brush':
-                    drawingCanvas.style.cursor = 'crosshair';
+                    document.getElementById('brushBtn').classList.add('active');
+                    fabricCanvas.isDrawingMode = true;
+                    fabricCanvas.freeDrawingBrush = new fabric.PencilBrush(fabricCanvas);
+                    fabricCanvas.freeDrawingBrush.color = document.getElementById('colorPicker').value;
+                    fabricCanvas.freeDrawingBrush.width = parseInt(document.getElementById('brushSize').value, 10);
                     hideTextControls();
+                    log('🖌️ Brush enabled');
                     break;
                 case 'eraser':
-                    drawingCanvas.style.cursor = 'grab';
+                    document.getElementById('eraserBtn').classList.add('active');
+                    fabricCanvas.isDrawingMode = true;
+                    fabricCanvas.freeDrawingBrush = new fabric.PencilBrush(fabricCanvas);
+                    fabricCanvas.freeDrawingBrush.color = '#ffffff';
+                    fabricCanvas.freeDrawingBrush.width = parseInt(document.getElementById('brushSize').value, 10);
                     hideTextControls();
-                    break;
-                case 'line':
-                case 'rectangle':
-                case 'circle':
-                    drawingCanvas.style.cursor = 'crosshair';
-                    hideTextControls();
+                    log('🧽 Eraser enabled (draws white)');
                     break;
                 case 'text':
-                    drawingCanvas.style.cursor = 'text';
+                    document.getElementById('textBtn').classList.add('active');
+                    fabricCanvas.isDrawingMode = false;
                     showTextControls();
+                    log('📝 Click 캔버스 to place text');
+                    break;
+                case 'rect':
+                case 'circle':
+                case 'line':
+                    document.getElementById(`${tool}Btn`).classList.add('active');
+                    fabricCanvas.isDrawingMode = false;
+                    hideTextControls();
+                    break;
+                default:
+                    fabricCanvas.isDrawingMode = false;
+                    hideTextControls();
                     break;
             }
+        }
 
-            log(`🔧 Tool changed to: ${tool}`);
+        function addShape(type) {
+            setTool(type);
+            const color = document.getElementById('colorPicker').value;
+            const strokeWidth = parseInt(document.getElementById('brushSize').value, 10);
+            let obj = null;
+
+            if (type === 'rect') {
+                obj = new fabric.Rect({
+                    left: 40,
+                    top: 30,
+                    width: 140,
+                    height: 70,
+                    fill: 'rgba(0,0,0,0)',
+                    stroke: color,
+                    strokeWidth,
+                    rx: 6,
+                    ry: 6
+                });
+            } else if (type === 'circle') {
+                obj = new fabric.Circle({
+                    left: 160,
+                    top: 40,
+                    radius: 32,
+                    fill: 'rgba(0,0,0,0)',
+                    stroke: color,
+                    strokeWidth
+                });
+            } else if (type === 'line') {
+                obj = new fabric.Line([30, 100, 200, 40], {
+                    stroke: color,
+                    strokeWidth,
+                    strokeLineCap: 'round'
+                });
+            }
+
+            if (obj) {
+                fabricCanvas.add(obj);
+                fabricCanvas.setActiveObject(obj);
+                fabricCanvas.requestRenderAll();
+                log(`✨ Added ${type}`);
+            }
         }
 
         function showTextControls() {
@@ -572,327 +514,246 @@
             document.getElementById('textControls').style.display = 'none';
         }
 
-        // Drawing event handlers
-        function startDrawing(event) {
-            if (!drawingMode && currentTool !== 'text') return;
+        function commitText() {
+            if (currentTool !== 'text') {
+                setTool('text');
+            }
+            log('ℹ️ 텍스트를 추가하려면 캔버스를 클릭하세요');
+        }
 
-            const rect = drawingCanvas.getBoundingClientRect();
-            startX = (event.clientX || event.touches[0].clientX) - rect.left;
-            startY = (event.clientY || event.touches[0].clientY) - rect.top;
-
-            if (currentTool === 'text') {
-                handleTextTool(startX, startY);
+        function addTextAt(x, y) {
+            const value = document.getElementById('textInput').value.trim();
+            if (!value) {
+                log('❌ 텍스트 내용을 입력하세요');
                 return;
             }
-
-            isDrawing = true;
-
-            if (currentTool === 'brush' || currentTool === 'eraser') {
-                draw(event);
-            }
-        }
-
-        function draw(event) {
-            if (!drawingMode) return;
-
-            const rect = drawingCanvas.getBoundingClientRect();
-            const currentX = (event.clientX || event.touches[0].clientX) - rect.left;
-            const currentY = (event.clientY || event.touches[0].clientY) - rect.top;
-
+            const fontSize = parseInt(document.getElementById('fontSize').value, 10) || 20;
             const color = document.getElementById('colorPicker').value;
-            const size = parseInt(document.getElementById('brushSize').value);
 
-            if (currentTool === 'brush' && isDrawing) {
-                drawingCtx.globalCompositeOperation = 'source-over';
-                drawingCtx.fillStyle = color;
-                drawingCtx.beginPath();
-                drawingCtx.arc(currentX, currentY, size, 0, Math.PI * 2);
-                drawingCtx.fill();
-            } else if (currentTool === 'eraser' && isDrawing) {
-                drawingCtx.globalCompositeOperation = 'destination-out';
-                drawingCtx.beginPath();
-                drawingCtx.arc(currentX, currentY, size, 0, Math.PI * 2);
-                drawingCtx.fill();
-                drawingCtx.globalCompositeOperation = 'source-over';
+            const text = new fabric.Text(value, {
+                left: x,
+                top: y,
+                fontSize,
+                originX: 'center',
+                originY: 'center',
+                fill: color,
+                fontFamily: 'Arial'
+            });
+
+            fabricCanvas.add(text);
+            fabricCanvas.setActiveObject(text);
+            fabricCanvas.requestRenderAll();
+            log(`📝 텍스트 추가: "${value}" @ (${Math.round(x)}, ${Math.round(y)})`);
+        }
+
+        function updateBrushColor(color) {
+            if (fabricCanvas.freeDrawingBrush && currentTool === 'brush') {
+                fabricCanvas.freeDrawingBrush.color = color;
             }
         }
 
-        function stopDrawing(event) {
-            if (!isDrawing || !drawingMode) return;
-            isDrawing = false;
-
-            const rect = drawingCanvas.getBoundingClientRect();
-            const endX = (event.clientX || event.touches[0].clientX) - rect.left;
-            const endY = (event.clientY || event.touches[0].clientY) - rect.top;
-
-            const color = document.getElementById('colorPicker').value;
-            const size = parseInt(document.getElementById('brushSize').value);
-
-            drawingCtx.strokeStyle = color;
-            drawingCtx.lineWidth = size;
-            drawingCtx.lineCap = 'round';
-
-            switch(currentTool) {
-                case 'line':
-                    drawingCtx.beginPath();
-                    drawingCtx.moveTo(startX, startY);
-                    drawingCtx.lineTo(endX, endY);
-                    drawingCtx.stroke();
-                    break;
-
-                case 'rectangle':
-                    drawingCtx.strokeRect(startX, startY, endX - startX, endY - startY);
-                    break;
-
-                case 'circle':
-                    const radius = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
-                    drawingCtx.beginPath();
-                    drawingCtx.arc(startX, startY, radius, 0, Math.PI * 2);
-                    drawingCtx.stroke();
-                    break;
+        function updateBrushSize(size) {
+            const px = parseInt(size, 10);
+            document.getElementById('brushSizeValue').textContent = px;
+            if (fabricCanvas.freeDrawingBrush) {
+                fabricCanvas.freeDrawingBrush.width = px;
             }
         }
 
-        function handleTextTool(x, y) {
-            const text = document.getElementById('textInput').value;
-            const fontSize = parseInt(document.getElementById('fontSize').value);
-
-            if (!text.trim()) {
-                log('❌ Please enter text first');
-                return;
-            }
-
-            const color = document.getElementById('colorPicker').value;
-            drawingCtx.fillStyle = color;
-            drawingCtx.font = `${fontSize}px Arial, sans-serif`;
-            drawingCtx.textAlign = 'left';
-            drawingCtx.textBaseline = 'top';
-
-            drawingCtx.fillText(text, x, y);
-            document.getElementById('textInput').value = '';
-
-            log(`📝 Text added: "${text}" at (${Math.round(x)}, ${Math.round(y)})`);
+        function clearCanvas() {
+            fabricCanvas.clear();
+            fabricCanvas.backgroundColor = '#ffffff';
+            fabricCanvas.renderAll();
+            log('🗑️ Canvas cleared');
         }
 
-        // Canvas management
-        function clearDrawingCanvas() {
-            drawingCtx.fillStyle = 'white';
-            drawingCtx.fillRect(0, 0, drawingCanvas.width, drawingCanvas.height);
-            log('🗑️ Drawing canvas cleared');
+        function addDemoLayout() {
+            clearCanvas();
+
+            const header = new fabric.Text('회의실 안내', {
+                left: ESL_WIDTH / 2,
+                top: 28,
+                fontSize: 26,
+                fill: '#000000',
+                fontWeight: 'bold',
+                originX: 'center'
+            });
+
+            const subtitle = new fabric.Text('NEMR 전자가격표시기 (2.9")', {
+                left: ESL_WIDTH / 2,
+                top: 56,
+                fontSize: 16,
+                fill: '#333333',
+                originX: 'center'
+            });
+
+            const box = new fabric.Rect({
+                left: 16,
+                top: 72,
+                width: ESL_WIDTH - 32,
+                height: 40,
+                stroke: '#1976d2',
+                strokeWidth: 2,
+                fill: 'rgba(25,118,210,0.05)',
+                rx: 8,
+                ry: 8
+            });
+
+            const time = new fabric.Text('14:30 ~ 15:30', {
+                left: ESL_WIDTH / 2,
+                top: 90,
+                fontSize: 20,
+                fill: '#000000',
+                originX: 'center'
+            });
+
+            fabricCanvas.add(box, header, subtitle, time);
+            fabricCanvas.requestRenderAll();
+            log('✨ Sample layout inserted');
         }
 
-        function clearPreviewCanvas() {
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            log('🗑️ Preview canvas cleared');
+        function downloadCanvas() {
+            const dataURL = fabricCanvas.toDataURL({ format: 'png' });
+            const a = document.createElement('a');
+            a.href = dataURL;
+            a.download = 'nemr-esl-2.9.png';
+            a.click();
+            log('💾 Canvas downloaded');
         }
 
-        function copyToPreview() {
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(drawingCanvas, 0, 0);
-            log('📋 Drawing copied to preview');
-        }
-
-        // Load image from file
         function loadImage(event) {
             const file = event.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    // Clear preview canvas
-                    ctx.fillStyle = 'white';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                    // Calculate scaling to fit canvas
-                    const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
-                    const x = (canvas.width - img.width * scale) / 2;
-                    const y = (canvas.height - img.height * scale) / 2;
-
-                    ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+                fabric.Image.fromURL(e.target.result, (img) => {
+                    const scale = Math.min(
+                        ESL_WIDTH / img.width,
+                        ESL_HEIGHT / img.height
+                    );
+                    img.set({
+                        left: ESL_WIDTH / 2,
+                        top: ESL_HEIGHT / 2,
+                        originX: 'center',
+                        originY: 'center',
+                        scaleX: scale,
+                        scaleY: scale
+                    });
+                    fabricCanvas.add(img);
+                    fabricCanvas.setActiveObject(img);
+                    fabricCanvas.requestRenderAll();
                     log(`📷 Image loaded: ${file.name}`);
-                };
-                img.src = e.target.result;
+                }, { crossOrigin: 'anonymous' });
             };
             reader.readAsDataURL(file);
         }
 
-        // Handle drag and drop
         function handleDragOver(event) {
             event.preventDefault();
-            event.currentTarget.classList.add('dragover');
+            document.getElementById('uploadArea').classList.add('dragover');
         }
 
         function handleDragLeave(event) {
-            event.currentTarget.classList.remove('dragover');
+            event.preventDefault();
+            document.getElementById('uploadArea').classList.remove('dragover');
         }
 
         function handleDrop(event) {
             event.preventDefault();
-            event.currentTarget.classList.remove('dragover');
-
+            document.getElementById('uploadArea').classList.remove('dragover');
             const files = event.dataTransfer.files;
-            if (files.length > 0 && files[0].type.startsWith('image/')) {
-                const fakeEvent = { target: { files: files } };
-                loadImage(fakeEvent);
+            if (files && files.length > 0 && files[0].type.startsWith('image/')) {
+                loadImage({ target: { files } });
             }
         }
 
-        // Rotation functions
-        function rotatePreview(degrees) {
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        function updateConnectionStatus(connected) {
+            const status = document.getElementById('connectionStatus');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            const uploadBtn = document.getElementById('uploadBtn');
 
-            // Create temporary canvas for rotation
-            const tempCanvas = document.createElement('canvas');
-            const tempCtx = tempCanvas.getContext('2d');
-
-            if (degrees === 90 || degrees === -90 || degrees === 270) {
-                tempCanvas.width = canvas.height;
-                tempCanvas.height = canvas.width;
+            if (connected) {
+                status.classList.remove('disconnected');
+                status.classList.add('connected');
+                status.textContent = `✅ Connected to ${device.name}`;
+                connectBtn.style.display = 'none';
+                disconnectBtn.style.display = 'block';
+                uploadBtn.disabled = false;
             } else {
-                tempCanvas.width = canvas.width;
-                tempCanvas.height = canvas.height;
+                status.classList.add('disconnected');
+                status.classList.remove('connected');
+                status.textContent = '❌ Not connected';
+                connectBtn.style.display = 'block';
+                disconnectBtn.style.display = 'none';
+                uploadBtn.disabled = true;
             }
-
-            // Clear temp canvas
-            tempCtx.fillStyle = 'white';
-            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-
-            // Apply rotation
-            tempCtx.save();
-            tempCtx.translate(tempCanvas.width / 2, tempCanvas.height / 2);
-            tempCtx.rotate((degrees * Math.PI) / 180);
-            tempCtx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
-            tempCtx.restore();
-
-            // Update main canvas size if needed
-            if (degrees === 90 || degrees === -90 || degrees === 270) {
-                canvas.width = tempCanvas.width;
-                canvas.height = tempCanvas.height;
-            }
-
-            // Copy rotated image back
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(tempCanvas, 0, 0);
-
-            log(`🔄 Preview rotated ${degrees}°`);
         }
 
-        // Connect to NEMR device
         async function connectDevice() {
             try {
                 log('🔍 Searching for NEMR Bluetooth devices...');
-
-                // Request device with NEMR name filter
                 device = await navigator.bluetooth.requestDevice({
-                    filters: [{
-                        namePrefix: 'NEMR'
-                    }],
+                    filters: [{ namePrefix: 'NEMR' }],
                     optionalServices: ['0000fef0-0000-1000-8000-00805f9b34fb']
                 });
 
-                log(`📱 Found device: ${device.name}`);
-
                 const server = await device.gatt.connect();
-                log('🔗 Connected to GATT server');
+                log(`🔗 Connected to GATT server (${device.name})`);
 
                 const service = await server.getPrimaryService('0000fef0-0000-1000-8000-00805f9b34fb');
                 cmdCharacteristic = await service.getCharacteristic('0000fef1-0000-1000-8000-00805f9b34fb');
                 imgCharacteristic = await service.getCharacteristic('0000fef2-0000-1000-8000-00805f9b34fb');
 
-                // Setup command characteristic notifications
                 await cmdCharacteristic.startNotifications();
                 cmdCharacteristic.addEventListener('characteristicvaluechanged', handleCommandResponse);
 
                 updateConnectionStatus(true);
-                document.getElementById('uploadBtn').disabled = false;
-
-                log('✅ Successfully connected to NEMR device');
-
+                log('✅ Ready to upload');
             } catch (error) {
                 log(`❌ Connection failed: ${error.message}`);
                 updateConnectionStatus(false);
             }
         }
 
-        // Disconnect device
         function disconnectDevice() {
             if (device && device.gatt.connected) {
                 device.gatt.disconnect();
             }
             updateConnectionStatus(false);
-            document.getElementById('uploadBtn').disabled = true;
-            log('🔌 Disconnected from device');
+            log('🔌 Disconnected');
         }
 
-        // Update connection status UI
-        function updateConnectionStatus(connected) {
-            const status = document.getElementById('connectionStatus');
-            const connectBtn = document.getElementById('connectBtn');
-            const disconnectBtn = document.getElementById('disconnectBtn');
-
-            if (connected) {
-                status.className = 'connection-status connected';
-                status.textContent = `✅ Connected to ${device.name}`;
-                connectBtn.style.display = 'none';
-                disconnectBtn.style.display = 'block';
-            } else {
-                status.className = 'connection-status disconnected';
-                status.textContent = '❌ Not Connected - Click Connect to start';
-                connectBtn.style.display = 'block';
-                disconnectBtn.style.display = 'none';
-            }
-        }
-
-        // ESL Protocol Implementation
         function handleCommandResponse(event) {
             const data = new Uint8Array(event.target.value.buffer);
             const op = data[0];
+            log(`📨 CMD 0x${op.toString(16).padStart(2, '0')}`);
 
-            log(`📨 Received command: 0x${op.toString(16).padStart(2, '0')}`);
-
-            switch(op) {
-                case 0x01: // Handshake response
-                    if (data.length >= 3) {
-                        partMsgSize = data[1] | (data[2] << 8);
-                        partDataSize = Math.max(partMsgSize - 4, 240);
-                        log(`📋 Part size: ${partMsgSize}, Data size: ${partDataSize}`);
-                        protocolStep = 1;
-                    }
-                    break;
-
-                case 0x02: // Ready response
-                    protocolStep = 2;
-                    log('🔄 Device ready for data');
-                    break;
-
-                case 0x05: // Status/ACK response
-                    if (data.length >= 2) {
-                        const status = data[1];
-                        if (status === 0x08) {
-                            log('✅ Upload completed successfully!');
-                            protocolStep = 99; // Success
-                        } else if (status === 0x00 && data.length >= 6) {
-                            currentAck = data[2] | (data[3] << 8) | (data[4] << 16) | (data[5] << 24);
-                            gotAck = true;
-                            log(`📨 ACK received: part ${currentAck}`);
-                        } else {
-                            log(`❌ Device error: status 0x${status.toString(16)}`);
-                            protocolStep = -1; // Error
-                        }
-                    }
-                    break;
+            if (op === 0x01 && data.length >= 3) {
+                partMsgSize = data[1] | (data[2] << 8);
+                partDataSize = Math.max(partMsgSize - 4, 240);
+                protocolStep = 1;
+                log(`📋 Chunk size negotiated → ${partDataSize} bytes`);
+            } else if (op === 0x02) {
+                protocolStep = 2;
+            } else if (op === 0x05 && data.length >= 2) {
+                const status = data[1];
+                if (status === 0x08) {
+                    protocolStep = 99;
+                    log('✅ Device confirmed image refresh');
+                } else if (status === 0x00 && data.length >= 6) {
+                    currentAck = data[2] | (data[3] << 8) | (data[4] << 16) | (data[5] << 24);
+                    gotAck = true;
+                } else {
+                    protocolStep = -1;
+                    log(`❌ Device reported error status 0x${status.toString(16)}`);
+                }
             }
         }
 
-        async function sendCommand(data) {
-            if (!cmdCharacteristic) return false;
+        async function sendCommand(bytes) {
             try {
-                await cmdCharacteristic.writeValue(new Uint8Array(data));
+                await cmdCharacteristic.writeValue(new Uint8Array(bytes));
                 return true;
             } catch (error) {
                 log(`❌ Command send failed: ${error.message}`);
@@ -901,263 +762,230 @@
         }
 
         async function sendImagePart(partIndex) {
-            if (!imgCharacteristic) return false;
-
             const offset = partIndex * partDataSize;
-            if (offset >= payload.length) return true;
-
-            const dataSize = Math.min(partDataSize, payload.length - offset);
-            const chunk = new Uint8Array(4 + dataSize);
-
-            // Part index (little-endian)
-            chunk[0] = partIndex & 0xFF;
-            chunk[1] = (partIndex >> 8) & 0xFF;
-            chunk[2] = (partIndex >> 16) & 0xFF;
-            chunk[3] = (partIndex >> 24) & 0xFF;
-
-            // Data
-            chunk.set(payload.slice(offset, offset + dataSize), 4);
-
+            if (offset >= payload.length) {
+                return true;
+            }
+            const chunkLength = Math.min(partDataSize, payload.length - offset);
+            const packet = new Uint8Array(4 + chunkLength);
+            packet[0] = partIndex & 0xff;
+            packet[1] = (partIndex >> 8) & 0xff;
+            packet[2] = (partIndex >> 16) & 0xff;
+            packet[3] = (partIndex >> 24) & 0xff;
+            packet.set(payload.slice(offset, offset + chunkLength), 4);
             try {
-                await imgCharacteristic.writeValue(chunk);
+                await imgCharacteristic.writeValue(packet);
                 return true;
             } catch (error) {
-                log(`❌ Part ${partIndex} send failed: ${error.message}`);
+                log(`❌ Data part send failed: ${error.message}`);
                 return false;
             }
         }
 
-        // Upload image to device using proper ESL protocol
         async function uploadToDevice() {
             if (!cmdCharacteristic || !imgCharacteristic) {
-                log('❌ No device connected');
+                log('❌ Connect to a device first');
                 return;
             }
 
             try {
-                log('📤 Starting ESL upload protocol...');
-
-                // Step 1: Convert canvas to ESL bitmap format
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const imageData = prepareImageData();
                 payload = convertToESLBitmap(imageData);
-                log(`🔄 Prepared ${payload.length} bytes payload`);
+                log(`🧮 Prepared payload (${payload.length} bytes)`);
 
-                // Reset protocol state
                 protocolStep = 0;
                 gotAck = false;
                 currentAck = 0;
 
-                // Step 2: Send handshake command (0x01)
-                log('🤝 Sending handshake...');
                 if (!await sendCommand([0x01])) return;
 
-                // Wait for handshake response
                 for (let i = 0; i < 100; i++) {
                     if (protocolStep >= 1) break;
-                    await new Promise(resolve => setTimeout(resolve, 30));
+                    await delay(30);
                 }
-
                 if (protocolStep < 1) {
-                    log('❌ Handshake failed');
+                    log('❌ Handshake (0x01) timeout');
                     return;
                 }
 
-                // Step 3: Send data size command (0x02)
-                const sizeCmd = new Uint8Array(8);
-                sizeCmd[0] = 0x02;
-                sizeCmd[1] = payload.length & 0xFF;
-                sizeCmd[2] = (payload.length >> 8) & 0xFF;
-                sizeCmd[3] = (payload.length >> 16) & 0xFF;
-                sizeCmd[4] = (payload.length >> 24) & 0xFF;
-                sizeCmd[5] = 0;
-                sizeCmd[6] = 0;
-                sizeCmd[7] = 0;
+                const sizeMsg = new Uint8Array(8);
+                sizeMsg[0] = 0x02;
+                const total = payload.length;
+                sizeMsg[1] = total & 0xff;
+                sizeMsg[2] = (total >> 8) & 0xff;
+                sizeMsg[3] = (total >> 16) & 0xff;
+                sizeMsg[4] = (total >> 24) & 0xff;
+                if (!await sendCommand(sizeMsg)) return;
+                await delay(100);
 
-                log('📏 Sending data size...');
-                if (!await sendCommand(sizeCmd)) return;
-
-                await new Promise(resolve => setTimeout(resolve, 100));
-
-                // Step 4: Send start command (0x03)
-                log('🚀 Sending start command...');
                 if (!await sendCommand([0x03])) return;
 
-                // Step 5: Send image data parts
                 const totalParts = Math.ceil(payload.length / partDataSize);
-                log(`📡 Sending ${totalParts} parts...`);
+                log(`🚚 Sending ${totalParts} packets…`);
 
                 let currentPart = 0;
-                let lastAckPart = -1;
-                let timeoutCount = 0;
+                let lastAck = -1;
+                let stallCounter = 0;
 
-                // Send first part
                 if (!await sendImagePart(currentPart)) return;
 
-                while (currentPart < totalParts && timeoutCount < 100) {
-                    await new Promise(resolve => setTimeout(resolve, 50));
+                while (currentPart < totalParts && stallCounter < 120) {
+                    await delay(40);
 
                     if (protocolStep === 99) {
-                        // Success!
-                        log('✅ Image successfully uploaded to ESL device!');
+                        log('🎉 Upload complete');
                         return;
                     }
-
                     if (protocolStep === -1) {
-                        log('❌ Device reported error during upload');
+                        log('❌ Device aborted transfer');
                         return;
                     }
 
-                    if (gotAck && currentAck !== lastAckPart) {
-                        lastAckPart = currentAck;
-                        timeoutCount = 0;
+                    if (gotAck && currentAck !== lastAck) {
+                        lastAck = currentAck;
+                        stallCounter = 0;
 
                         if (currentAck >= totalParts) {
-                            log('✅ All parts acknowledged!');
+                            log('✅ All parts acknowledged');
                             break;
                         }
 
-                        // Send next part
                         currentPart = currentAck;
                         if (!await sendImagePart(currentPart)) return;
 
-                        if (currentPart % 10 === 0) {
-                            log(`📊 Progress: ${currentPart}/${totalParts} parts`);
+                        if (currentPart % 8 === 0) {
+                            log(`📊 Progress ${currentPart}/${totalParts}`);
                         }
 
                         gotAck = false;
                     } else {
-                        timeoutCount++;
-                        if (timeoutCount > 30) {
-                            // Retry last part
-                            log(`🔄 Retrying part ${currentPart}...`);
+                        stallCounter++;
+                        if (stallCounter % 30 === 0) {
+                            log(`⏳ Still waiting for ACK… retry part ${currentPart}`);
                             if (!await sendImagePart(currentPart)) return;
-                            timeoutCount = 0;
                         }
                     }
                 }
 
-                if (timeoutCount >= 100) {
-                    log('❌ Upload timeout - device may not be responding');
+                if (protocolStep === 99) {
+                    log('✅ ESL refresh complete');
                 } else {
-                    log('✅ Upload completed!');
+                    log('⚠️ Transfer ended without final confirmation');
                 }
-
             } catch (error) {
                 log(`❌ Upload failed: ${error.message}`);
             }
         }
 
-        // Convert image to ESL BWR bitmap format (FIXED VERSION)
-        function convertToESLBitmap(imageData) {
-            const data = imageData.data;
-            const width = imageData.width;
-            const height = imageData.height;
-            const bitmap = [];
+        function prepareImageData() {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = ESL_WIDTH;
+            tempCanvas.height = ESL_HEIGHT;
+            const tempCtx = tempCanvas.getContext('2d');
 
-            const bytesPerRow = Math.ceil(width / 8);
-            const mirrorX = true; // Match Arduino MIRROR_X setting
+            tempCtx.fillStyle = '#ffffff';
+            tempCtx.fillRect(0, 0, ESL_WIDTH, ESL_HEIGHT);
+            tempCtx.drawImage(fabricCanvas.getElement(), 0, 0);
 
-            // Helper function to get bit from buffer
-            function getBit(x, y, buffer) {
-                const actualX = mirrorX ? (width - 1 - x) : x;
-                const idx = y * bytesPerRow + Math.floor(actualX / 8);
-                const mask = 0x80 >> (actualX % 8);
-                return (buffer[idx] & mask) !== 0;
+            const rotation = parseInt(document.getElementById('rotationSelect').value, 10);
+            if (rotation === 180) {
+                const rotatedCanvas = document.createElement('canvas');
+                rotatedCanvas.width = ESL_WIDTH;
+                rotatedCanvas.height = ESL_HEIGHT;
+                const rotatedCtx = rotatedCanvas.getContext('2d');
+                rotatedCtx.translate(ESL_WIDTH, ESL_HEIGHT);
+                rotatedCtx.rotate(Math.PI);
+                rotatedCtx.drawImage(tempCanvas, 0, 0);
+                log('🔄 Applied 180° rotation for upload');
+                return rotatedCtx.getImageData(0, 0, ESL_WIDTH, ESL_HEIGHT);
             }
 
-            // Create BW buffer (BLACK pixels should be 0, WHITE pixels should be 1)
-            const bwBuffer = new Uint8Array(bytesPerRow * height);
-            for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x++) {
-                    const i = (y * width + x) * 4;
-                    const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
-                    const isWhite = gray > 128;
-
-                    const actualX = mirrorX ? (width - 1 - x) : x;
-                    const idx = y * bytesPerRow + Math.floor(actualX / 8);
-                    const mask = 0x80 >> (actualX % 8);
-
-                    if (isWhite) {
-                        bwBuffer[idx] |= mask;
-                    }
-                }
-            }
-
-            // Create RED buffer - should be mostly empty (WHITE=1) for normal images
-            const redBuffer = new Uint8Array(bytesPerRow * height);
-            redBuffer.fill(0xFF); // Start with all WHITE (no red pixels)
-
-            // Optionally detect red pixels in the image
-            for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x++) {
-                    const i = (y * width + x) * 4;
-                    const r = data[i];
-                    const g = data[i + 1];
-                    const b = data[i + 2];
-
-                    // Detect red pixels (red dominant and not white/gray)
-                    const isRed = r > 150 && r > (g + b) * 1.5 && (r + g + b) < 600;
-
-                    if (isRed) {
-                        const actualX = mirrorX ? (width - 1 - x) : x;
-                        const idx = y * bytesPerRow + Math.floor(actualX / 8);
-                        const mask = 0x80 >> (actualX % 8);
-                        redBuffer[idx] &= ~mask; // Clear bit for red pixel (0 = RED, 1 = WHITE)
-                    }
-                }
-            }
-
-            // Pack according to ESL format: for each X column, pack 16 bytes (128 bits) for BW, then 16 bytes for RED
-            for (let x = 0; x < width; x++) {
-                // Pack BW data for this column
-                for (let byteIdx = 0; byteIdx < 16; byteIdx++) {
-                    let byte = 0;
-                    for (let bit = 0; bit < 8; bit++) {
-                        const y = byteIdx * 8 + bit;
-                        if (y < height) {
-                            if (getBit(x, y, bwBuffer)) {
-                                byte |= (1 << (7 - bit));
-                            }
-                        }
-                    }
-                    bitmap.push(byte);
-                }
-            }
-
-            // Pack RED data for each column
-            for (let x = 0; x < width; x++) {
-                for (let byteIdx = 0; byteIdx < 16; byteIdx++) {
-                    let byte = 0;
-                    for (let bit = 0; bit < 8; bit++) {
-                        const y = byteIdx * 8 + bit;
-                        if (y < height) {
-                            if (getBit(x, y, redBuffer)) {
-                                byte |= (1 << (7 - bit));
-                            }
-                        }
-                    }
-                    bitmap.push(byte);
-                }
-            }
-
-            return bitmap;
+            return tempCtx.getImageData(0, 0, ESL_WIDTH, ESL_HEIGHT);
         }
 
-        // Logging function
+        function convertToESLBitmap(imageData) {
+            const { width, height, data } = imageData;
+            const bytesPerRow = Math.ceil(width / 8);
+            const mirrorX = true;
+
+            const bwBuffer = new Uint8Array(bytesPerRow * height);
+            const redBuffer = new Uint8Array(bytesPerRow * height);
+            bwBuffer.fill(0xff);
+            redBuffer.fill(0xff);
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const idxRGBA = (y * width + x) * 4;
+                    const r = data[idxRGBA];
+                    const g = data[idxRGBA + 1];
+                    const b = data[idxRGBA + 2];
+
+                    const column = Math.floor(x / 8);
+                    const bitMask = 0x80 >> (x % 8);
+                    const idx = y * bytesPerRow + column;
+
+                    const isRed = r > 150 && r > g + b && (r + g + b) < 600;
+                    if (isRed) {
+                        redBuffer[idx] &= ~bitMask;
+                        bwBuffer[idx] |= bitMask;
+                        continue;
+                    }
+
+                    const gray = (0.299 * r + 0.587 * g + 0.114 * b);
+                    if (gray > 160) {
+                        bwBuffer[idx] |= bitMask; // white
+                    } else {
+                        bwBuffer[idx] &= ~bitMask; // black
+                    }
+                }
+            }
+
+            const packed = [];
+            const bytesPerColumn = Math.ceil(height / 8);
+
+            const packPlane = (buffer, oneIsWhite) => {
+                for (let x = 0; x < width; x++) {
+                    const sourceX = mirrorX ? (width - 1 - x) : x;
+                    for (let byteIndex = 0; byteIndex < bytesPerColumn; byteIndex++) {
+                        let outByte = 0;
+                        for (let bit = 0; bit < 8; bit++) {
+                            const y = byteIndex * 8 + bit;
+                            if (y >= height) continue;
+                            const baseIndex = y * bytesPerRow + Math.floor(sourceX / 8);
+                            const mask = 0x80 >> (sourceX % 8);
+                            const bitIsOne = (buffer[baseIndex] & mask) !== 0;
+                            const eslBit = oneIsWhite ? (bitIsOne ? 1 : 0) : (bitIsOne ? 0 : 1);
+                            if (eslBit) {
+                                outByte |= (1 << (7 - bit));
+                            }
+                        }
+                        packed.push(outByte);
+                    }
+                }
+            };
+
+            packPlane(bwBuffer, true);
+            packPlane(redBuffer, false);
+
+            return packed;
+        }
+
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
         function log(message) {
             const logArea = document.getElementById('logArea');
-            const timestamp = new Date().toLocaleTimeString();
-            logArea.innerHTML += `[${timestamp}] ${message}\n`;
+            const stamp = new Date().toLocaleTimeString();
+            logArea.textContent += `[${stamp}] ${message}\n`;
             logArea.scrollTop = logArea.scrollHeight;
         }
 
-        // Check for Bluetooth support
         if (!navigator.bluetooth) {
-            log('❌ Bluetooth API not supported in this browser');
-            log('💡 Please use Chrome or Edge for Bluetooth Web API support');
+            log('❌ This browser does not support Web Bluetooth. Use Chrome or Edge.');
             document.getElementById('connectBtn').disabled = true;
         } else {
-            log('✅ Bluetooth Web API supported');
+            log('🧭 Web Bluetooth available');
         }
     </script>
 </body>

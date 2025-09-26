@@ -9,49 +9,31 @@ A modern web application for uploading images to NEMR Electronic Shelf Labels (E
 ### 🔍 NEMR Device Filtering
 - Automatically filters and shows only Bluetooth devices with "NEMR" prefix
 - Streamlined device selection process
-- Enhanced user experience for NEMR ESL devices
+- Real-time connection status with upload readiness check
 
-### 🔄 Default Rotation Support
-- **90° rotation applied by default** for optimal ESL display orientation
-- Additional rotation controls: 90°, 180°, 270°
-- Smart canvas resizing based on rotation angle
+### 📐 2.9" Landscape Optimisation
+- Canvas locked to **296×128 px** (NEMR 2.9" resolution)
+- Optional 180° flip for upside-down installations
+- Pixel packing mirrors the official Arduino firmware (no red-wash issue)
 
-### 🎨 Advanced Drawing & Upload Tools
-- **Interactive drawing canvas** with multiple tools:
-  - **Brush Tool**: Freehand drawing with adjustable size and color
-  - **Eraser Tool**: Precise erasing with size control
-  - **Line Tool**: Draw straight lines between two points
-  - **Rectangle Tool**: Draw rectangles and squares
-  - **Circle Tool**: Draw circles from center point
-  - **Text Tool**: Add text with custom size and color
-- Color picker and adjustable brush size (1-20px)
-- Drag & drop image upload support
-- Canvas clearing and view/draw mode toggle
+### 🎨 Fabric.js Drawing Workspace
+- Powered by Fabric.js for smooth, reliable editing
+- Tools: brush, eraser, text, rectangle, circle, line
+- Adjustable brush size (1–40 px) and colour picker
+- Drag & drop or file picker image import with auto-fit scaling
+- Quick actions: clear canvas, sample layout, PNG download
 
 ### 🌓 Modern UI/UX
 - Dark/Light theme toggle with persistence
-- Mobile-responsive design
-- Card-based layout with smooth animations
-- Real-time connection status indicators
-
-### 📱 Device Compatibility
-- Supports multiple ESL display sizes:
-  - 296x128 (2.9")
-  - 200x200 (1.54")
-  - 250x122 (2.13")
-  - 400x300 (4.2")
+- Responsive layout for desktop and tablet
+- Activity log with timestamped BLE protocol events
 
 ### 🔧 Technical Features
-- **Client-side processing** - no server uploads
-- **Complete ESL Protocol Implementation**:
-  - Proper BLE handshake with command/image characteristics
-  - ESL bitmap format conversion (BWR support)
-  - Reliable data transmission with ACK protocol
-  - Retry mechanism and error handling
-- Web Bluetooth API integration (FEF0/FEF1/FEF2 services)
-- Advanced image processing and rotation
-- Touch support for mobile devices
-- Progressive Web App ready
+- Fully client-side – no server uploads needed
+- **Complete ESL protocol implementation** (0x01/0x02/0x03 handshake + ACK retries)
+- Accurate B/W + red plane packing (mirrored X columns) for NEMR tags
+- Detailed logging of each command, ACK, and retry
+- Web Bluetooth API integration (FEF0/FEF1/FEF2)
 
 ## 🚀 Live Demo
 
@@ -65,47 +47,15 @@ This application requires browsers with Web Bluetooth API support:
 - ❌ Firefox (limited support)
 - ❌ Safari (not supported)
 
-## 📋 Usage Instructions
+## 📋 Usage Instructions (2.9" ESL)
 
-1. **Connect Device**: Click "Connect to NEMR Device" to scan for NEMR-labeled Bluetooth devices
-2. **Select Display Size**: Choose your ESL device's display dimensions
-3. **Upload/Draw Image**:
-   - Drag & drop an image file, or
-   - Click the upload area to select a file, or
-   - Toggle drawing mode and create custom graphics
-4. **Apply Rotation**: Use rotation controls as needed (90° applied by default)
-5. **Upload to Device**: Click "Upload to ESL Device" to send the image
+1. **Connect** – Click "Connect to NEMR Device" (only NEMR-prefixed devices are shown).
+2. **Design** – Draw with the brush, add shapes/text, or import an image (auto scaled to 296×128).
+3. **Orientation** – Leave at `Landscape (0°)` for normal mounting. Use `Flip 180°` if the tag is upside-down.
+4. **Review** – Optional: download PNG or drop in the included sample layout for testing.
+5. **Upload** – Click "Upload to ESL" to run the BLE handshake and transfer (progress + ACK logs shown).
 
-## 🔄 Default Rotation
-
-The application automatically applies a **90° rotation** when the page loads, optimized for typical ESL mounting orientations. You can adjust this using the rotation controls.
-
-## 🎨 Advanced Drawing Features
-
-### 🖌️ Drawing Tools
-- **Brush Tool**: Freehand drawing with smooth strokes
-- **Eraser Tool**: Precisely remove parts of your drawing
-- **Line Tool**: Draw perfectly straight lines
-- **Rectangle Tool**: Create rectangles and squares
-- **Circle Tool**: Draw circles from center to edge
-- **Text Tool**: Add custom text with font size control
-
-### ⚙️ Drawing Controls
-- **Color Picker**: Select any color for drawing and text
-- **Brush Size**: Adjustable from 1-20 pixels for brush and eraser
-- **Font Size**: Adjustable text size from 8-72 pixels
-- **Tool Selection**: Easy switching between drawing tools
-- **Clear Canvas**: Reset the entire canvas to white background
-
-### 🖱️ Usage Instructions
-1. **Enable Drawing**: Click "Draw Mode" to activate drawing tools
-2. **Select Tool**: Choose from brush, eraser, line, rectangle, circle, or text
-3. **Adjust Settings**: Set color, brush size, or font size as needed
-4. **Draw/Create**:
-   - Click and drag for brush, eraser
-   - Click start and end points for lines, rectangles, circles
-   - Click where you want text and enter your message
-5. **View Mode**: Switch back to view mode to see final result
+> ⚠️ 90°/270° portrait rotation is not supported on NEMR 2.9" hardware because the panel firmware expects 296 columns. Use the 180° flip if the device is installed upside-down.
 
 ## 🏷️ NEMR Device Filter
 
@@ -117,7 +67,7 @@ The Bluetooth device selector is configured to show only devices with names star
 web_ble_esl/
 ├── index.html          # Main application file
 ├── .github/workflows/  # GitHub Actions for Pages deployment
-└── README.md          # This file
+└── README.md           # This file
 ```
 
 ## 🤝 Contributing
