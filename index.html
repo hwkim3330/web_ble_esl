@@ -731,7 +731,7 @@
 
             if (op === 0x01 && data.length >= 3) {
                 partMsgSize = data[1] | (data[2] << 8);
-                partDataSize = Math.max(partMsgSize - 4, 240);
+                partDataSize = partMsgSize >= 4 ? (partMsgSize - 4) : 240;
                 protocolStep = 1;
                 log(`📋 Chunk size negotiated → ${partDataSize} bytes`);
             } else if (op === 0x02) {
@@ -878,6 +878,9 @@
         }
 
         function prepareImageData() {
+            fabricCanvas.discardActiveObject();
+            fabricCanvas.renderAll();
+
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = ESL_WIDTH;
             tempCanvas.height = ESL_HEIGHT;
