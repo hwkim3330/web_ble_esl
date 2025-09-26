@@ -16,9 +16,15 @@ A modern web application for uploading images to NEMR Electronic Shelf Labels (E
 - Additional rotation controls: 90°, 180°, 270°
 - Smart canvas resizing based on rotation angle
 
-### 🎨 Drawing & Upload Tools
-- **Interactive drawing canvas** with brush tools
-- Color picker and adjustable brush size
+### 🎨 Advanced Drawing & Upload Tools
+- **Interactive drawing canvas** with multiple tools:
+  - **Brush Tool**: Freehand drawing with adjustable size and color
+  - **Eraser Tool**: Precise erasing with size control
+  - **Line Tool**: Draw straight lines between two points
+  - **Rectangle Tool**: Draw rectangles and squares
+  - **Circle Tool**: Draw circles from center point
+  - **Text Tool**: Add text with custom size and color
+- Color picker and adjustable brush size (1-20px)
 - Drag & drop image upload support
 - Canvas clearing and view/draw mode toggle
 
@@ -37,8 +43,13 @@ A modern web application for uploading images to NEMR Electronic Shelf Labels (E
 
 ### 🔧 Technical Features
 - **Client-side processing** - no server uploads
-- Web Bluetooth API integration
-- Image to bitmap conversion
+- **Complete ESL Protocol Implementation**:
+  - Proper BLE handshake with command/image characteristics
+  - ESL bitmap format conversion (BWR support)
+  - Reliable data transmission with ACK protocol
+  - Retry mechanism and error handling
+- Web Bluetooth API integration (FEF0/FEF1/FEF2 services)
+- Advanced image processing and rotation
 - Touch support for mobile devices
 - Progressive Web App ready
 
@@ -69,12 +80,32 @@ This application requires browsers with Web Bluetooth API support:
 
 The application automatically applies a **90° rotation** when the page loads, optimized for typical ESL mounting orientations. You can adjust this using the rotation controls.
 
-## 🎨 Drawing Features
+## 🎨 Advanced Drawing Features
 
-- **Drawing Mode**: Toggle between view and drawing modes
-- **Color Picker**: Select any color for drawing
-- **Brush Size**: Adjustable from 1-20 pixels
-- **Clear Canvas**: Reset the canvas to white background
+### 🖌️ Drawing Tools
+- **Brush Tool**: Freehand drawing with smooth strokes
+- **Eraser Tool**: Precisely remove parts of your drawing
+- **Line Tool**: Draw perfectly straight lines
+- **Rectangle Tool**: Create rectangles and squares
+- **Circle Tool**: Draw circles from center to edge
+- **Text Tool**: Add custom text with font size control
+
+### ⚙️ Drawing Controls
+- **Color Picker**: Select any color for drawing and text
+- **Brush Size**: Adjustable from 1-20 pixels for brush and eraser
+- **Font Size**: Adjustable text size from 8-72 pixels
+- **Tool Selection**: Easy switching between drawing tools
+- **Clear Canvas**: Reset the entire canvas to white background
+
+### 🖱️ Usage Instructions
+1. **Enable Drawing**: Click "Draw Mode" to activate drawing tools
+2. **Select Tool**: Choose from brush, eraser, line, rectangle, circle, or text
+3. **Adjust Settings**: Set color, brush size, or font size as needed
+4. **Draw/Create**:
+   - Click and drag for brush, eraser
+   - Click start and end points for lines, rectangles, circles
+   - Click where you want text and enter your message
+5. **View Mode**: Switch back to view mode to see final result
 
 ## 🏷️ NEMR Device Filter
 

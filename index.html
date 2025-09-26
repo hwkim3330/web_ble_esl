@@ -209,6 +209,24 @@
             width: 80px !important;
         }
 
+        .tool-active {
+            background: var(--success-color) !important;
+            color: white !important;
+        }
+
+        #textControls {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .shape-preview {
+            position: absolute;
+            pointer-events: none;
+            border: 2px dashed var(--primary-color);
+            background: rgba(33, 150, 243, 0.1);
+        }
+
         .upload-area {
             border: 2px dashed var(--border-color);
             border-radius: 8px;
@@ -321,8 +339,22 @@
                 <div class="drawing-tools">
                     <input type="color" id="colorPicker" value="#000000" class="color-picker">
                     <input type="range" id="brushSize" min="1" max="20" value="3" class="brush-size">
-                    <button onclick="clearCanvas()">🗑️ Clear</button>
-                    <button onclick="toggleDrawing()">✏️ Draw</button>
+                    <button onclick="setTool('brush')" id="brushBtn">🖌️ Brush</button>
+                    <button onclick="setTool('eraser')" id="eraserBtn">🗑️ Eraser</button>
+                    <button onclick="setTool('line')" id="lineBtn">📏 Line</button>
+                </div>
+
+                <div class="drawing-tools">
+                    <button onclick="setTool('rectangle')" id="rectBtn">⬜ Rectangle</button>
+                    <button onclick="setTool('circle')" id="circleBtn">⭕ Circle</button>
+                    <button onclick="setTool('text')" id="textBtn">📝 Text</button>
+                    <button onclick="clearCanvas()">🗑️ Clear All</button>
+                    <button onclick="toggleDrawing()" id="drawToggle">✏️ Draw Mode</button>
+                </div>
+
+                <div class="form-group" id="textControls" style="display:none;">
+                    <input type="text" id="textInput" placeholder="Enter text..." style="width:70%;">
+                    <input type="number" id="fontSize" value="16" min="8" max="72" style="width:25%;" placeholder="Size">
                 </div>
 
                 <div class="rotation-controls">
@@ -349,12 +381,25 @@
     <script>
         // Global variables
         let device = null;
-        let characteristic = null;
+        let cmdCharacteristic = null;
+        let imgCharacteristic = null;
         let canvas = null;
         let ctx = null;
         let isDrawing = false;
         let drawingMode = false;
+        let currentTool = 'brush';
         let currentRotation = 90; // Default rotation
+        let startX = 0, startY = 0;
+        let textMode = false;
+        let textX = 0, textY = 0;
+
+        // ESL Protocol variables
+        let partMsgSize = 244;
+        let partDataSize = 240;
+        let payload = [];
+        let gotAck = false;
+        let currentAck = 0;
+        let protocolStep = 0;
 
         // Theme toggle
         function toggleTheme() {
@@ -432,7 +477,7 @@
                     filters: [{
                         namePrefix: 'NEMR'
                     }],
-                    optionalServices: ['0000fff0-0000-1000-8000-00805f9b34fb']
+                    optionalServices: ['0000fef0-0000-1000-8000-00805f9b34fb']
                 });
 
                 log(`📱 Found device: ${device.name}`);
@@ -440,8 +485,13 @@
                 const server = await device.gatt.connect();
                 log('🔗 Connected to GATT server');
 
-                const service = await server.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
-                characteristic = await service.getCharacteristic('0000fff1-0000-1000-8000-00805f9b34fb');
+                const service = await server.getPrimaryService('0000fef0-0000-1000-8000-00805f9b34fb');
+                cmdCharacteristic = await service.getCharacteristic('0000fef1-0000-1000-8000-00805f9b34fb');
+                imgCharacteristic = await service.getCharacteristic('0000fef2-0000-1000-8000-00805f9b34fb');
+
+                // Setup command characteristic notifications
+                await cmdCharacteristic.startNotifications();
+                cmdCharacteristic.addEventListener('characteristicvaluechanged', handleCommandResponse);
 
                 updateConnectionStatus(true);
                 document.getElementById('uploadBtn').disabled = false;
@@ -533,36 +583,171 @@
         // Drawing functions
         function toggleDrawing() {
             drawingMode = !drawingMode;
-            const btn = event.target;
-            btn.textContent = drawingMode ? '🖼️ View' : '✏️ Draw';
-            canvas.style.cursor = drawingMode ? 'crosshair' : 'default';
+            const btn = document.getElementById('drawToggle');
+            btn.textContent = drawingMode ? '🖼️ View Mode' : '✏️ Draw Mode';
+
+            if (drawingMode) {
+                setTool('brush'); // Default to brush when entering draw mode
+            } else {
+                canvas.style.cursor = 'default';
+                hideTextControls();
+            }
+
             log(`${drawingMode ? '✏️ Drawing mode enabled' : '🖼️ View mode enabled'}`);
         }
 
+        function setTool(tool) {
+            if (!drawingMode && tool !== 'text') return;
+
+            currentTool = tool;
+
+            // Update button states
+            document.querySelectorAll('.drawing-tools button').forEach(btn => {
+                btn.classList.remove('tool-active');
+            });
+
+            const activeBtn = document.getElementById(tool + 'Btn') ||
+                             document.getElementById(tool === 'brush' ? 'brushBtn' :
+                                                  tool === 'eraser' ? 'eraserBtn' :
+                                                  tool === 'line' ? 'lineBtn' :
+                                                  tool === 'rectangle' ? 'rectBtn' :
+                                                  tool === 'circle' ? 'circleBtn' :
+                                                  tool === 'text' ? 'textBtn' : null);
+
+            if (activeBtn) activeBtn.classList.add('tool-active');
+
+            // Update cursor and controls
+            switch(tool) {
+                case 'brush':
+                    canvas.style.cursor = 'crosshair';
+                    hideTextControls();
+                    break;
+                case 'eraser':
+                    canvas.style.cursor = 'grab';
+                    hideTextControls();
+                    break;
+                case 'line':
+                case 'rectangle':
+                case 'circle':
+                    canvas.style.cursor = 'crosshair';
+                    hideTextControls();
+                    break;
+                case 'text':
+                    canvas.style.cursor = 'text';
+                    showTextControls();
+                    break;
+            }
+
+            log(`🔧 Tool changed to: ${tool}`);
+        }
+
+        function showTextControls() {
+            document.getElementById('textControls').style.display = 'block';
+        }
+
+        function hideTextControls() {
+            document.getElementById('textControls').style.display = 'none';
+        }
+
         function startDrawing(event) {
-            if (!drawingMode) return;
+            if (!drawingMode && currentTool !== 'text') return;
+
+            const rect = canvas.getBoundingClientRect();
+            startX = (event.clientX || event.touches[0].clientX) - rect.left;
+            startY = (event.clientY || event.touches[0].clientY) - rect.top;
+
+            if (currentTool === 'text') {
+                handleTextTool(startX, startY);
+                return;
+            }
+
             isDrawing = true;
-            draw(event);
+
+            if (currentTool === 'brush' || currentTool === 'eraser') {
+                draw(event);
+            }
         }
 
         function draw(event) {
-            if (!isDrawing || !drawingMode) return;
+            if (!drawingMode) return;
 
             const rect = canvas.getBoundingClientRect();
-            const x = (event.clientX || event.touches[0].clientX) - rect.left;
-            const y = (event.clientY || event.touches[0].clientY) - rect.top;
+            const currentX = (event.clientX || event.touches[0].clientX) - rect.left;
+            const currentY = (event.clientY || event.touches[0].clientY) - rect.top;
 
             const color = document.getElementById('colorPicker').value;
-            const size = document.getElementById('brushSize').value;
+            const size = parseInt(document.getElementById('brushSize').value);
 
-            ctx.fillStyle = color;
-            ctx.beginPath();
-            ctx.arc(x, y, size, 0, Math.PI * 2);
-            ctx.fill();
+            if (currentTool === 'brush' && isDrawing) {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(currentX, currentY, size, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (currentTool === 'eraser' && isDrawing) {
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath();
+                ctx.arc(currentX, currentY, size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalCompositeOperation = 'source-over';
+            }
         }
 
-        function stopDrawing() {
+        function stopDrawing(event) {
+            if (!isDrawing || !drawingMode) return;
             isDrawing = false;
+
+            const rect = canvas.getBoundingClientRect();
+            const endX = (event.clientX || event.touches[0].clientX) - rect.left;
+            const endY = (event.clientY || event.touches[0].clientY) - rect.top;
+
+            const color = document.getElementById('colorPicker').value;
+            const size = parseInt(document.getElementById('brushSize').value);
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = size;
+            ctx.lineCap = 'round';
+
+            switch(currentTool) {
+                case 'line':
+                    ctx.beginPath();
+                    ctx.moveTo(startX, startY);
+                    ctx.lineTo(endX, endY);
+                    ctx.stroke();
+                    break;
+
+                case 'rectangle':
+                    ctx.strokeRect(startX, startY, endX - startX, endY - startY);
+                    break;
+
+                case 'circle':
+                    const radius = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+                    ctx.beginPath();
+                    ctx.arc(startX, startY, radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                    break;
+            }
+        }
+
+        function handleTextTool(x, y) {
+            const text = document.getElementById('textInput').value;
+            const fontSize = parseInt(document.getElementById('fontSize').value);
+
+            if (!text.trim()) {
+                log('❌ Please enter text first');
+                return;
+            }
+
+            const color = document.getElementById('colorPicker').value;
+            ctx.fillStyle = color;
+            ctx.font = `${fontSize}px Arial, sans-serif`;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+
+            ctx.fillText(text, x, y);
+            document.getElementById('textInput').value = '';
+
+            log(`📝 Text added: "${text}" at (${Math.round(x)}, ${Math.round(y)})`);
         }
 
         function clearCanvas() {
@@ -612,57 +797,275 @@
             log(`🔄 Image rotated ${degrees}°`);
         }
 
-        // Upload image to device
+        // ESL Protocol Implementation
+        function handleCommandResponse(event) {
+            const data = new Uint8Array(event.target.value.buffer);
+            const op = data[0];
+
+            log(`📨 Received command: 0x${op.toString(16).padStart(2, '0')}`);
+
+            switch(op) {
+                case 0x01: // Handshake response
+                    if (data.length >= 3) {
+                        partMsgSize = data[1] | (data[2] << 8);
+                        partDataSize = Math.max(partMsgSize - 4, 240);
+                        log(`📋 Part size: ${partMsgSize}, Data size: ${partDataSize}`);
+                        protocolStep = 1;
+                    }
+                    break;
+
+                case 0x02: // Ready response
+                    protocolStep = 2;
+                    log('🔄 Device ready for data');
+                    break;
+
+                case 0x05: // Status/ACK response
+                    if (data.length >= 2) {
+                        const status = data[1];
+                        if (status === 0x08) {
+                            log('✅ Upload completed successfully!');
+                            protocolStep = 99; // Success
+                        } else if (status === 0x00 && data.length >= 6) {
+                            currentAck = data[2] | (data[3] << 8) | (data[4] << 16) | (data[5] << 24);
+                            gotAck = true;
+                            log(`📨 ACK received: part ${currentAck}`);
+                        } else {
+                            log(`❌ Device error: status 0x${status.toString(16)}`);
+                            protocolStep = -1; // Error
+                        }
+                    }
+                    break;
+            }
+        }
+
+        async function sendCommand(data) {
+            if (!cmdCharacteristic) return false;
+            try {
+                await cmdCharacteristic.writeValue(new Uint8Array(data));
+                return true;
+            } catch (error) {
+                log(`❌ Command send failed: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function sendImagePart(partIndex) {
+            if (!imgCharacteristic) return false;
+
+            const offset = partIndex * partDataSize;
+            if (offset >= payload.length) return true;
+
+            const dataSize = Math.min(partDataSize, payload.length - offset);
+            const chunk = new Uint8Array(4 + dataSize);
+
+            // Part index (little-endian)
+            chunk[0] = partIndex & 0xFF;
+            chunk[1] = (partIndex >> 8) & 0xFF;
+            chunk[2] = (partIndex >> 16) & 0xFF;
+            chunk[3] = (partIndex >> 24) & 0xFF;
+
+            // Data
+            chunk.set(payload.slice(offset, offset + dataSize), 4);
+
+            try {
+                await imgCharacteristic.writeValue(chunk);
+                return true;
+            } catch (error) {
+                log(`❌ Part ${partIndex} send failed: ${error.message}`);
+                return false;
+            }
+        }
+
+        // Upload image to device using proper ESL protocol
         async function uploadToDevice() {
-            if (!characteristic) {
+            if (!cmdCharacteristic || !imgCharacteristic) {
                 log('❌ No device connected');
                 return;
             }
 
             try {
-                log('📤 Preparing image for upload...');
+                log('📤 Starting ESL upload protocol...');
 
-                // Convert canvas to black and white bitmap
+                // Step 1: Convert canvas to ESL bitmap format
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const bitmap = convertToBitmap(imageData);
+                payload = convertToESLBitmap(imageData);
+                log(`🔄 Prepared ${payload.length} bytes payload`);
 
-                log('📡 Sending image data to device...');
+                // Reset protocol state
+                protocolStep = 0;
+                gotAck = false;
+                currentAck = 0;
 
-                // Send bitmap data in chunks
-                const chunkSize = 20;
-                for (let i = 0; i < bitmap.length; i += chunkSize) {
-                    const chunk = bitmap.slice(i, i + chunkSize);
-                    await characteristic.writeValue(new Uint8Array(chunk));
-                    await new Promise(resolve => setTimeout(resolve, 10));
+                // Step 2: Send handshake command (0x01)
+                log('🤝 Sending handshake...');
+                if (!await sendCommand([0x01])) return;
+
+                // Wait for handshake response
+                for (let i = 0; i < 100; i++) {
+                    if (protocolStep >= 1) break;
+                    await new Promise(resolve => setTimeout(resolve, 30));
                 }
 
-                log('✅ Image successfully uploaded to ESL device!');
+                if (protocolStep < 1) {
+                    log('❌ Handshake failed');
+                    return;
+                }
+
+                // Step 3: Send data size command (0x02)
+                const sizeCmd = new Uint8Array(8);
+                sizeCmd[0] = 0x02;
+                sizeCmd[1] = payload.length & 0xFF;
+                sizeCmd[2] = (payload.length >> 8) & 0xFF;
+                sizeCmd[3] = (payload.length >> 16) & 0xFF;
+                sizeCmd[4] = (payload.length >> 24) & 0xFF;
+                sizeCmd[5] = 0;
+                sizeCmd[6] = 0;
+                sizeCmd[7] = 0;
+
+                log('📏 Sending data size...');
+                if (!await sendCommand(sizeCmd)) return;
+
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                // Step 4: Send start command (0x03)
+                log('🚀 Sending start command...');
+                if (!await sendCommand([0x03])) return;
+
+                // Step 5: Send image data parts
+                const totalParts = Math.ceil(payload.length / partDataSize);
+                log(`📡 Sending ${totalParts} parts...`);
+
+                let currentPart = 0;
+                let lastAckPart = -1;
+                let timeoutCount = 0;
+
+                // Send first part
+                if (!await sendImagePart(currentPart)) return;
+
+                while (currentPart < totalParts && timeoutCount < 100) {
+                    await new Promise(resolve => setTimeout(resolve, 50));
+
+                    if (protocolStep === 99) {
+                        // Success!
+                        log('✅ Image successfully uploaded to ESL device!');
+                        return;
+                    }
+
+                    if (protocolStep === -1) {
+                        log('❌ Device reported error during upload');
+                        return;
+                    }
+
+                    if (gotAck && currentAck !== lastAckPart) {
+                        lastAckPart = currentAck;
+                        timeoutCount = 0;
+
+                        if (currentAck >= totalParts) {
+                            log('✅ All parts acknowledged!');
+                            break;
+                        }
+
+                        // Send next part
+                        currentPart = currentAck;
+                        if (!await sendImagePart(currentPart)) return;
+
+                        if (currentPart % 10 === 0) {
+                            log(`📊 Progress: ${currentPart}/${totalParts} parts`);
+                        }
+
+                        gotAck = false;
+                    } else {
+                        timeoutCount++;
+                        if (timeoutCount > 30) {
+                            // Retry last part
+                            log(`🔄 Retrying part ${currentPart}...`);
+                            if (!await sendImagePart(currentPart)) return;
+                            timeoutCount = 0;
+                        }
+                    }
+                }
+
+                if (timeoutCount >= 100) {
+                    log('❌ Upload timeout - device may not be responding');
+                } else {
+                    log('✅ Upload completed!');
+                }
 
             } catch (error) {
                 log(`❌ Upload failed: ${error.message}`);
             }
         }
 
-        // Convert image to black and white bitmap
-        function convertToBitmap(imageData) {
+        // Convert image to ESL BWR bitmap format (matches Arduino implementation)
+        function convertToESLBitmap(imageData) {
             const data = imageData.data;
             const width = imageData.width;
             const height = imageData.height;
             const bitmap = [];
 
+            const bytesPerRow = Math.ceil(width / 8);
+            const mirrorX = true; // Match Arduino MIRROR_X setting
+
+            // Helper function to get bit from buffer
+            function getBit(x, y, buffer) {
+                const actualX = mirrorX ? (width - 1 - x) : x;
+                const idx = y * bytesPerRow + Math.floor(actualX / 8);
+                const mask = 0x80 >> (actualX % 8);
+                return (buffer[idx] & mask) !== 0;
+            }
+
+            // Create BW buffer
+            const bwBuffer = new Uint8Array(bytesPerRow * height);
             for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x += 8) {
+                for (let x = 0; x < width; x++) {
+                    const i = (y * width + x) * 4;
+                    const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                    const isWhite = gray > 128;
+
+                    const actualX = mirrorX ? (width - 1 - x) : x;
+                    const idx = y * bytesPerRow + Math.floor(actualX / 8);
+                    const mask = 0x80 >> (actualX % 8);
+
+                    if (isWhite) {
+                        bwBuffer[idx] |= mask;
+                    }
+                }
+            }
+
+            // Create RED buffer (for now, just empty - could detect red colors later)
+            const redBuffer = new Uint8Array(bytesPerRow * height);
+            // Fill with white for now
+            redBuffer.fill(0xFF);
+
+            // Pack according to ESL format: for each X column, pack 16 bytes (128 bits) for BW, then 16 bytes for RED
+            for (let x = 0; x < width; x++) {
+                // Pack BW data for this column
+                for (let byteIdx = 0; byteIdx < 16; byteIdx++) {
                     let byte = 0;
-
-                    for (let bit = 0; bit < 8 && x + bit < width; bit++) {
-                        const i = (y * width + x + bit) * 4;
-                        const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
-
-                        if (gray < 128) {
-                            byte |= (1 << (7 - bit));
+                    for (let bit = 0; bit < 8; bit++) {
+                        const y = byteIdx * 8 + bit;
+                        if (y < height) {
+                            if (getBit(x, y, bwBuffer)) {
+                                byte |= (1 << (7 - bit));
+                            }
                         }
                     }
+                    bitmap.push(byte);
+                }
+            }
 
+            // Pack RED data for each column
+            for (let x = 0; x < width; x++) {
+                for (let byteIdx = 0; byteIdx < 16; byteIdx++) {
+                    let byte = 0;
+                    for (let bit = 0; bit < 8; bit++) {
+                        const y = byteIdx * 8 + bit;
+                        if (y < height) {
+                            if (getBit(x, y, redBuffer)) {
+                                byte |= (1 << (7 - bit));
+                            }
+                        }
+                    }
                     bitmap.push(byte);
                 }
             }
@@ -681,8 +1084,16 @@
         // Check for Bluetooth support
         if (!navigator.bluetooth) {
             log('❌ Bluetooth API not supported in this browser');
+            log('💡 Please use Chrome or Edge for Bluetooth Web API support');
             document.getElementById('connectBtn').disabled = true;
+        } else {
+            log('✅ Bluetooth Web API supported');
         }
+
+        // Initialize with default tool
+        document.addEventListener('DOMContentLoaded', function() {
+            setTool('brush'); // Set default tool
+        });
     </script>
 </body>
 </html>
