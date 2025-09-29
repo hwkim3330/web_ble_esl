@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NEMR 2.9\" ESL Uploader</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js" integrity="sha512-jXDHfc4we1GDpB4AOPtY1zNtElK+dy3iTFPX83yq3VU7PHhlLj4DHMm9G88qmwRaMBOti2KeDjgrvvTtsuKWZw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://unpkg.com/fabric@5.3.0/dist/fabric.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js'"></script>
     <style>
         :root {
             --primary-color: #1976d2;
@@ -388,6 +388,14 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             initTheme();
+
+            // Check if Fabric.js loaded successfully
+            if (typeof fabric === 'undefined') {
+                log('❌ Fabric.js failed to load. Please refresh the page.');
+                document.querySelector('.canvas-card').innerHTML = '<h2>⚠️ Loading Error</h2><p>Fabric.js 라이브러리를 로드할 수 없습니다. 페이지를 새로고침해주세요.</p>';
+                return;
+            }
+
             initCanvas();
             log('✅ Ready – Fabric.js canvas initialised for 296×128 ESL');
             log('💡 Draw freely, 가져온 이미지를 배치하고 업로드하세요.');
