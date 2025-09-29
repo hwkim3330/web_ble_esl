@@ -375,6 +375,11 @@
         let isDrawing = false;
         let lastX = 0;
         let lastY = 0;
+        let startX = 0;
+        let startY = 0;
+        let isShapeDrawing = false;
+        let tempCanvas = null;
+        let tempCtx = null;
         let device = null;
         let cmdCharacteristic = null;
         let imgCharacteristic = null;
@@ -432,6 +437,12 @@
             canvas = document.getElementById('drawingCanvas');
             ctx = canvas.getContext('2d');
 
+            // Create temporary canvas for shape preview
+            tempCanvas = document.createElement('canvas');
+            tempCanvas.width = ESL_WIDTH;
+            tempCanvas.height = ESL_HEIGHT;
+            tempCtx = tempCanvas.getContext('2d');
+
             // Set canvas properties
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
@@ -443,72 +454,119 @@
             ctx.fillRect(0, 0, ESL_WIDTH, ESL_HEIGHT);
 
             // Add event listeners
-            canvas.addEventListener('mousedown', startDrawing);
-            canvas.addEventListener('mousemove', draw);
-            canvas.addEventListener('mouseup', stopDrawing);
-            canvas.addEventListener('mouseout', stopDrawing);
+            canvas.addEventListener('mousedown', handleMouseDown);
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('mouseup', handleMouseUp);
+            canvas.addEventListener('mouseout', handleMouseUp);
 
             // Touch events for mobile
             canvas.addEventListener('touchstart', handleTouch);
             canvas.addEventListener('touchmove', handleTouch);
-            canvas.addEventListener('touchend', stopDrawing);
-
-            // Canvas click for text tool
-            canvas.addEventListener('click', handleCanvasClick);
+            canvas.addEventListener('touchend', handleMouseUp);
 
             // Save initial state
             saveCanvasState();
         }
 
-        function startDrawing(e) {
-            if (currentTool === 'text') return;
-
-            isDrawing = true;
+        function handleMouseDown(e) {
             const rect = canvas.getBoundingClientRect();
-            lastX = e.clientX - rect.left;
-            lastY = e.clientY - rect.top;
+            startX = e.clientX - rect.left;
+            startY = e.clientY - rect.top;
+            lastX = startX;
+            lastY = startY;
+
+            if (currentTool === 'text') {
+                addTextAt(startX, startY);
+                return;
+            }
+
+            if (currentTool === 'rect' || currentTool === 'circle' || currentTool === 'line') {
+                isShapeDrawing = true;
+                // Save current canvas state for preview
+                tempCtx.drawImage(canvas, 0, 0);
+                return;
+            }
+
+            if (currentTool === 'brush' || currentTool === 'eraser') {
+                isDrawing = true;
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+            }
         }
 
-        function draw(e) {
-            if (!isDrawing || currentTool === 'text') return;
-
+        function handleMouseMove(e) {
             const rect = canvas.getBoundingClientRect();
             const currentX = e.clientX - rect.left;
             const currentY = e.clientY - rect.top;
 
-            ctx.beginPath();
-            ctx.moveTo(lastX, lastY);
-            ctx.lineTo(currentX, currentY);
-            ctx.stroke();
+            if (isShapeDrawing && (currentTool === 'rect' || currentTool === 'circle' || currentTool === 'line')) {
+                // Clear canvas and redraw original content
+                ctx.clearRect(0, 0, ESL_WIDTH, ESL_HEIGHT);
+                ctx.drawImage(tempCanvas, 0, 0);
+
+                // Draw preview shape
+                const color = document.getElementById('colorPicker').value;
+                const lineWidth = parseInt(document.getElementById('brushSize').value, 10);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = lineWidth;
+
+                if (currentTool === 'rect') {
+                    const width = currentX - startX;
+                    const height = currentY - startY;
+                    ctx.strokeRect(startX, startY, width, height);
+                } else if (currentTool === 'circle') {
+                    const radius = Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2));
+                    ctx.beginPath();
+                    ctx.arc(startX, startY, radius, 0, 2 * Math.PI);
+                    ctx.stroke();
+                } else if (currentTool === 'line') {
+                    ctx.beginPath();
+                    ctx.moveTo(startX, startY);
+                    ctx.lineTo(currentX, currentY);
+                    ctx.stroke();
+                }
+                return;
+            }
+
+            if (isDrawing && (currentTool === 'brush' || currentTool === 'eraser')) {
+                ctx.lineTo(currentX, currentY);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(currentX, currentY);
+            }
 
             lastX = currentX;
             lastY = currentY;
         }
 
-        function stopDrawing() {
+        function handleMouseUp() {
+            if (isShapeDrawing) {
+                isShapeDrawing = false;
+                // Shape is already drawn from preview, just save state
+                setTimeout(() => saveCanvasState(), 50);
+                log(`✨ Added ${currentTool}`);
+                return;
+            }
+
             if (isDrawing) {
                 isDrawing = false;
-                saveCanvasState();
+                setTimeout(() => saveCanvasState(), 50);
             }
         }
 
         function handleTouch(e) {
             e.preventDefault();
             const touch = e.touches[0];
-            const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 'mousemove', {
+            let eventType;
+            if (e.type === 'touchstart') eventType = 'mousedown';
+            else if (e.type === 'touchmove') eventType = 'mousemove';
+            else eventType = 'mouseup';
+
+            const mouseEvent = new MouseEvent(eventType, {
                 clientX: touch.clientX,
                 clientY: touch.clientY
             });
             canvas.dispatchEvent(mouseEvent);
-        }
-
-        function handleCanvasClick(e) {
-            if (currentTool === 'text') {
-                const rect = canvas.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                addTextAt(x, y);
-            }
         }
 
         function setTool(tool) {
@@ -526,23 +584,30 @@
                     break;
                 case 'eraser':
                     document.getElementById('eraserBtn').classList.add('active');
-                    ctx.strokeStyle = '#ffffff';
+                    ctx.globalCompositeOperation = 'destination-out';
                     ctx.lineWidth = parseInt(document.getElementById('brushSize').value, 10);
-                    ctx.globalCompositeOperation = 'source-over';
                     hideTextControls();
-                    log('🧽 Eraser enabled (draws white)');
+                    log('🧽 Eraser enabled');
                     break;
                 case 'text':
                     document.getElementById('textBtn').classList.add('active');
-                    hideTextControls();
                     showTextControls();
-                    log('📝 Click 캔버스 to place text');
+                    log('📝 Click canvas to place text');
                     break;
                 case 'rect':
-                case 'circle':
-                case 'line':
-                    document.getElementById(`${tool}Btn`).classList.add('active');
+                    document.getElementById('rectBtn').classList.add('active');
                     hideTextControls();
+                    log('⬜ Rectangle tool - drag to draw');
+                    break;
+                case 'circle':
+                    document.getElementById('circleBtn').classList.add('active');
+                    hideTextControls();
+                    log('⭕ Circle tool - drag to draw');
+                    break;
+                case 'line':
+                    document.getElementById('lineBtn').classList.add('active');
+                    hideTextControls();
+                    log('📏 Line tool - drag to draw');
                     break;
                 default:
                     hideTextControls();
@@ -552,30 +617,7 @@
 
         function addShape(type) {
             setTool(type);
-            const color = document.getElementById('colorPicker').value;
-            const strokeWidth = parseInt(document.getElementById('brushSize').value, 10);
-
-            ctx.strokeStyle = color;
-            ctx.lineWidth = strokeWidth;
-            ctx.fillStyle = 'transparent';
-
-            if (type === 'rect') {
-                ctx.strokeRect(40, 30, 140, 70);
-                log('✨ Added rectangle');
-            } else if (type === 'circle') {
-                ctx.beginPath();
-                ctx.arc(160, 60, 32, 0, 2 * Math.PI);
-                ctx.stroke();
-                log('✨ Added circle');
-            } else if (type === 'line') {
-                ctx.beginPath();
-                ctx.moveTo(30, 100);
-                ctx.lineTo(200, 40);
-                ctx.stroke();
-                log('✨ Added line');
-            }
-
-            saveCanvasState();
+            // Now shapes are drawn interactively - no need for fixed shapes
         }
 
         function showTextControls() {
@@ -637,9 +679,9 @@
                 canvasHistory = canvasHistory.slice(0, historyIndex + 1);
             }
 
-            // Add current state (canvas as data URL)
-            const state = canvas.toDataURL();
-            canvasHistory.push(state);
+            // Add current state (use getImageData for better performance)
+            const imageData = ctx.getImageData(0, 0, ESL_WIDTH, ESL_HEIGHT);
+            canvasHistory.push(imageData);
 
             // Limit history size
             if (canvasHistory.length > maxHistory) {
@@ -669,13 +711,8 @@
             }
         }
 
-        function loadCanvasState(dataURL) {
-            const img = new Image();
-            img.onload = function() {
-                ctx.clearRect(0, 0, ESL_WIDTH, ESL_HEIGHT);
-                ctx.drawImage(img, 0, 0);
-            };
-            img.src = dataURL;
+        function loadCanvasState(imageData) {
+            ctx.putImageData(imageData, 0, 0);
         }
 
         function updateUndoRedoButtons() {
