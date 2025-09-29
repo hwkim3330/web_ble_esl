@@ -1131,7 +1131,7 @@
                     return;
                 }
 
-                while (currentPart <= totalParts && stallCounter < TIMEOUT_LIMIT) {
+                while (currentPart < totalParts && stallCounter < TIMEOUT_LIMIT) {
                     await delay(MAIN_DELAY);
 
                     if (protocolStep === 99) {
@@ -1155,11 +1155,10 @@
                             break;
                         }
 
-                        // Send the next packet after the acknowledged one
-                        const nextPart = currentAck + 1;
-                        log(`🔄 ACK ${currentAck} received, next part should be ${nextPart}`);
-                        if (nextPart < totalParts) {
-                            currentPart = nextPart;
+                        // Send the next packet (original working logic)
+                        log(`🔄 ACK ${currentAck} received`);
+                        if (currentAck < totalParts) {
+                            currentPart = currentAck;
                             log(`📋 Updated currentPart to ${currentPart}`);
                             if (!await sendImagePart(currentPart)) {
                                 showUploadProgress(false);
