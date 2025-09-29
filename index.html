@@ -357,6 +357,17 @@
                     <p class="hint">2.9" 패널은 기본적으로 가로모드입니다. 거꾸로 설치한 경우 180°를 사용하세요.</p>
                 </div>
 
+                <div class="form-group">
+                    <label for="speedSlider">Transfer Speed</label>
+                    <div style="display: flex; gap: 12px; align-items: center; margin-top: 8px;">
+                        <span style="font-size: 0.85rem; opacity: 0.7;">🐌 Safe</span>
+                        <input type="range" id="speedSlider" min="1" max="10" value="5" style="flex: 1;" oninput="updateSpeedDisplay(this.value)">
+                        <span style="font-size: 0.85rem; opacity: 0.7;">🚀 Fast</span>
+                        <span id="speedValue" style="min-width: 60px; font-size: 0.9rem; font-weight: bold; color: var(--primary-color);">Normal</span>
+                    </div>
+                    <p class="hint">전송 속도를 조절하세요. 느린 속도는 안정적이지만 오래 걸리고, 빠른 속도는 일부 기기에서 실패할 수 있습니다.</p>
+                </div>
+
                 <div style="margin-top: 24px;">
                     <h3 style="margin-bottom: 16px; font-size: 1.1rem; color: var(--text-color);">📤 Upload</h3>
                     <button id="uploadBtn" class="btn-success" onclick="uploadToDevice()" disabled>📤 Upload to ESL</button>
@@ -456,12 +467,24 @@
         let cmdCharacteristic = null;
         let imgCharacteristic = null;
 
-        // Fixed timing values (from working f619f14 - Fabric.js replacement commit)
-        const MAIN_DELAY = 40;         // Main loop delay (proven working)
-        const COMMAND_DELAY = 100;     // After command delay (proven working)
-        const RETRY_INTERVAL = 30;     // Retry check interval (proven working)
-        const TIMEOUT_LIMIT = 120;     // Max timeout iterations (proven working)
-        const HANDSHAKE_DELAY = 30;    // Handshake loop delay (proven working)
+        // Dynamic timing values (user adjustable)
+        let speedLevel = 5; // Default: Normal speed (1=slowest, 10=fastest)
+
+        function getTimingValues() {
+            // Calculate timing based on speed level (1-10)
+            const baseMainDelay = 80 - (speedLevel * 7);     // 73ms -> 10ms
+            const baseCommandDelay = 150 - (speedLevel * 10); // 140ms -> 50ms
+            const baseHandshakeDelay = 50 - (speedLevel * 4); // 46ms -> 10ms
+            const baseRetryInterval = Math.max(10, 40 - (speedLevel * 3)); // 37 -> 10
+
+            return {
+                mainDelay: Math.max(5, baseMainDelay),
+                commandDelay: Math.max(20, baseCommandDelay),
+                handshakeDelay: Math.max(5, baseHandshakeDelay),
+                retryInterval: baseRetryInterval,
+                timeoutLimit: 120 + (speedLevel * 10) // More timeout for faster speeds
+            };
+        }
 
         let partMsgSize = 244;
         let partDataSize = 240;
@@ -475,6 +498,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             initCanvas();
+            updateSpeedDisplay(5); // Initialize with default speed
             log('✅ NEMR ESL Studio Ready – Canvas initialised for 296×128');
             log('💡 Start creating your professional ESL design');
 
@@ -1068,6 +1092,10 @@
             }
 
             try {
+                // Get current speed settings
+                const timing = getTimingValues();
+                log(`🚀 Transfer speed: Level ${speedLevel} (Main: ${timing.mainDelay}ms, Cmd: ${timing.commandDelay}ms)`);
+
                 showUploadProgress(true);
                 updateProgress(0, '이미지 준비 중...');
 
@@ -1085,9 +1113,9 @@
                     return;
                 }
 
-                for (let i = 0; i < TIMEOUT_LIMIT; i++) {
+                for (let i = 0; i < timing.timeoutLimit; i++) {
                     if (protocolStep >= 1) break;
-                    await delay(HANDSHAKE_DELAY);
+                    await delay(timing.handshakeDelay);
                 }
                 if (protocolStep < 1) {
                     log('❌ Handshake (0x01) timeout');
@@ -1107,7 +1135,7 @@
                     showUploadProgress(false);
                     return;
                 }
-                await delay(COMMAND_DELAY);
+                await delay(timing.commandDelay);
 
                 if (!await sendCommand([0x03])) {
                     showUploadProgress(false);
@@ -1122,8 +1150,8 @@
                 let lastAck = -1;
                 let stallCounter = 0;
 
-                // Wait before starting data transfer (original working value)
-                await delay(100);
+                // Wait before starting data transfer
+                await delay(timing.commandDelay / 2);
 
                 // Send first packet
                 if (!await sendImagePart(currentPart)) {
@@ -1131,8 +1159,8 @@
                     return;
                 }
 
-                while (currentPart < totalParts && stallCounter < TIMEOUT_LIMIT) {
-                    await delay(MAIN_DELAY);
+                while (currentPart < totalParts && stallCounter < timing.timeoutLimit) {
+                    await delay(timing.mainDelay);
 
                     if (protocolStep === 99) {
                         updateProgress(100, '업로드 완료!');
@@ -1177,7 +1205,7 @@
                         gotAck = false;
                     } else {
                         stallCounter++;
-                        if (stallCounter % RETRY_INTERVAL === 0) {
+                        if (stallCounter % timing.retryInterval === 0) {
                             log(`⏳ Stall count: ${stallCounter}, retrying packet ${currentPart}, last ACK was ${currentAck}`);
                             if (!await sendImagePart(currentPart)) {
                                 showUploadProgress(false);
@@ -1187,7 +1215,7 @@
                     }
                 }
 
-                if (stallCounter >= TIMEOUT_LIMIT) {
+                if (stallCounter >= timing.timeoutLimit) {
                     log('❌ Transfer timed out');
                     showUploadProgress(false);
                     return;
@@ -1312,6 +1340,22 @@
 
         function delay(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function updateSpeedDisplay(value) {
+            speedLevel = parseInt(value);
+            const timing = getTimingValues();
+
+            const speedNames = {
+                1: '🐌 Ultra Safe', 2: '🐌 Very Safe', 3: '🐌 Safe',
+                4: '⚡ Stable', 5: '⚡ Normal', 6: '⚡ Fast',
+                7: '🚀 Very Fast', 8: '🚀 Turbo', 9: '🚀 Ultra Fast', 10: '🚀 Maximum'
+            };
+
+            document.getElementById('speedValue').textContent = speedNames[speedLevel];
+
+            // Show timing info in tooltip or log
+            log(`⚙️ Speed: ${speedNames[speedLevel]} (Main: ${timing.mainDelay}ms, Cmd: ${timing.commandDelay}ms)`);
         }
 
 
