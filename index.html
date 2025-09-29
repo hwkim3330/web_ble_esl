@@ -458,7 +458,7 @@
         let imgCharacteristic = null;
 
         // Adaptive speed control
-        let transferMode = 'fast'; // fast, medium, slow
+        let transferMode = 'medium'; // Start with stable mode
         let retryAttempts = 0;
         let maxRetryAttempts = 2;
 
@@ -925,7 +925,7 @@
             const speedStatus = document.getElementById('speedStatus');
             const config = getSpeedConfig();
             const modeEmoji = {
-                'fast': '🚀',
+                'fast': '📶',
                 'medium': '⚡',
                 'slow': '🐌',
                 'ultra': '🛡️'
@@ -1070,12 +1070,6 @@
             packet.set(payload.slice(offset, offset + chunkLength), 4);
             try {
                 await imgCharacteristic.writeValue(packet);
-
-                // Ultra slow mode: add extra delay after each packet (atc1441 pattern)
-                if (transferMode === 'ultra') {
-                    await delay(500); // 500ms delay like atc1441's implementation
-                }
-
                 return true;
             } catch (error) {
                 log(`❌ Data part send failed: ${error.message}`);
@@ -1361,47 +1355,47 @@
             switch(transferMode) {
                 case 'fast':
                     return {
-                        mainDelay: 20,
-                        handshakeDelay: 20,
-                        commandDelay: 50,
-                        preTransferDelay: 100,
-                        retryInterval: 25,
-                        timeout: 120,
-                        sendDual: true,
-                        name: 'Fast Mode'
+                        mainDelay: 50,
+                        handshakeDelay: 50,
+                        commandDelay: 100,
+                        preTransferDelay: 200,
+                        retryInterval: 50,
+                        timeout: 200,
+                        sendDual: false,
+                        name: 'Standard Mode'
                     };
                 case 'medium':
                     return {
-                        mainDelay: 30,
-                        handshakeDelay: 25,
-                        commandDelay: 75,
-                        preTransferDelay: 150,
-                        retryInterval: 35,
-                        timeout: 150,
+                        mainDelay: 75,
+                        handshakeDelay: 75,
+                        commandDelay: 150,
+                        preTransferDelay: 300,
+                        retryInterval: 75,
+                        timeout: 250,
                         sendDual: false,
-                        name: 'Medium Mode'
+                        name: 'Stable Mode'
                     };
                 case 'slow':
                     return {
-                        mainDelay: 40,
-                        handshakeDelay: 30,
-                        commandDelay: 100,
-                        preTransferDelay: 200,
-                        retryInterval: 40,
-                        timeout: 200,
-                        sendDual: false,
-                        name: 'Slow Mode (Compatible)'
-                    };
-                case 'ultra':
-                    return {
                         mainDelay: 100,
                         handshakeDelay: 100,
-                        commandDelay: 500,  // Based on atc1441's 500ms pattern
+                        commandDelay: 200,
                         preTransferDelay: 500,
                         retryInterval: 100,
                         timeout: 300,
                         sendDual: false,
-                        name: 'Ultra Slow (ATC1441 Pattern)'
+                        name: 'Compatible Mode'
+                    };
+                case 'ultra':
+                    return {
+                        mainDelay: 150,
+                        handshakeDelay: 150,
+                        commandDelay: 500,
+                        preTransferDelay: 1000,
+                        retryInterval: 150,
+                        timeout: 400,
+                        sendDual: false,
+                        name: 'Ultra Compatible'
                     };
             }
         }
@@ -1484,30 +1478,12 @@
         function getDeviceProfile(deviceName) {
             const name = deviceName?.toLowerCase() || '';
 
-            // Known problematic devices that need slow mode
-            if (name.includes('nemr-2.9') || name.includes('old') || name.includes('legacy')) {
-                return {
-                    name: 'Legacy NEMR Profile',
-                    recommendedMode: 'slow',
-                    notes: 'Older hardware requires conservative timing'
-                };
-            }
-
-            // Newer devices that can handle fast mode
-            if (name.includes('nemr-3.0') || name.includes('new') || name.includes('pro')) {
-                return {
-                    name: 'Modern NEMR Profile',
-                    recommendedMode: 'fast',
-                    notes: 'Modern hardware supports high-speed transfers'
-                };
-            }
-
-            // Generic NEMR devices - try medium first
+            // All NEMR devices start with stable medium mode
             if (name.includes('nemr')) {
                 return {
-                    name: 'Standard NEMR Profile',
+                    name: 'NEMR ESL Profile',
                     recommendedMode: 'medium',
-                    notes: 'Balanced speed for standard NEMR devices'
+                    notes: 'Stable mode for reliable transfers'
                 };
             }
 
