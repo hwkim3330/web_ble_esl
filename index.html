@@ -932,7 +932,6 @@
         function handleCommandResponse(event) {
             const data = new Uint8Array(event.target.value.buffer);
             const op = data[0];
-            log(`📨 CMD 0x${op.toString(16).padStart(2, '0')}`);
 
             if (op === 0x01 && data.length >= 3) {
                 partMsgSize = data[1] | (data[2] << 8);
@@ -941,6 +940,7 @@
                 log(`📋 Chunk size negotiated → ${partDataSize} bytes`);
             } else if (op === 0x02) {
                 protocolStep = 2;
+                log('📨 Size command acknowledged');
             } else if (op === 0x05 && data.length >= 2) {
                 const status = data[1];
                 if (status === 0x08) {
@@ -949,10 +949,13 @@
                 } else if (status === 0x00 && data.length >= 6) {
                     currentAck = data[2] | (data[3] << 8) | (data[4] << 16) | (data[5] << 24);
                     gotAck = true;
+                    log(`📨 ACK received for part ${currentAck}`);
                 } else {
                     protocolStep = -1;
                     log(`❌ Device reported error status 0x${status.toString(16)}`);
                 }
+            } else {
+                log(`📨 CMD 0x${op.toString(16).padStart(2, '0')} (${data.length} bytes)`);
             }
         }
 
@@ -1011,9 +1014,9 @@
                     return;
                 }
 
-                for (let i = 0; i < 100; i++) {
+                for (let i = 0; i < 150; i++) { // More handshake attempts
                     if (protocolStep >= 1) break;
-                    await delay(15); // Faster handshake
+                    await delay(25); // Stable handshake timing
                 }
                 if (protocolStep < 1) {
                     log('❌ Handshake (0x01) timeout');
@@ -1033,7 +1036,7 @@
                     showUploadProgress(false);
                     return;
                 }
-                await delay(50); // Faster between commands
+                await delay(100); // Stable timing between commands
 
                 if (!await sendCommand([0x03])) {
                     showUploadProgress(false);
@@ -1048,10 +1051,16 @@
                 let lastAck = -1;
                 let stallCounter = 0;
 
-                if (!await sendImagePart(currentPart)) return;
+                // Wait a bit before starting data transfer
+                await delay(200);
 
-                while (currentPart < totalParts && stallCounter < 120) {
-                    await delay(20); // Reduced from 40ms to 20ms for faster transfer
+                if (!await sendImagePart(currentPart)) {
+                    showUploadProgress(false);
+                    return;
+                }
+
+                while (currentPart < totalParts && stallCounter < 200) { // Increased timeout
+                    await delay(30); // Balanced timing for reliability
 
                     if (protocolStep === 99) {
                         updateProgress(100, '업로드 완료!');
@@ -1091,7 +1100,7 @@
                         gotAck = false;
                     } else {
                         stallCounter++;
-                        if (stallCounter % 20 === 0) { // Retry more frequently
+                        if (stallCounter % 40 === 0) { // Less frequent but more stable retries
                             log(`⏳ Still waiting for ACK… retry part ${currentPart}`);
                             if (!await sendImagePart(currentPart)) {
                                 showUploadProgress(false);
