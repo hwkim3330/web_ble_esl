@@ -1073,9 +1073,9 @@
                     return;
                 }
 
-                for (let i = 0; i < 150; i++) { // More handshake attempts
+                for (let i = 0; i < 100; i++) { // Faster handshake
                     if (protocolStep >= 1) break;
-                    await delay(25); // Stable handshake timing
+                    await delay(20); // Faster handshake timing
                 }
                 if (protocolStep < 1) {
                     log('❌ Handshake (0x01) timeout');
@@ -1095,7 +1095,7 @@
                     showUploadProgress(false);
                     return;
                 }
-                await delay(100); // Stable timing between commands
+                await delay(50); // Faster command timing
 
                 if (!await sendCommand([0x03])) {
                     showUploadProgress(false);
@@ -1111,15 +1111,22 @@
                 let stallCounter = 0;
 
                 // Wait a bit before starting data transfer
-                await delay(200);
+                await delay(100); // Reduced waiting time
 
+                // Send first packet
                 if (!await sendImagePart(currentPart)) {
                     showUploadProgress(false);
                     return;
                 }
 
-                while (currentPart < totalParts && stallCounter < 150) { // Balanced timeout
-                    await delay(25); // Optimized timing for speed + reliability
+                // Try to send next packet immediately for faster transfer
+                currentPart++;
+                if (currentPart < totalParts) {
+                    await sendImagePart(currentPart);
+                }
+
+                while (currentPart <= totalParts && stallCounter < 120) { // Faster timeout
+                    await delay(20); // Faster main loop
 
                     if (protocolStep === 99) {
                         updateProgress(100, '업로드 완료!');
@@ -1142,24 +1149,28 @@
                             break;
                         }
 
-                        currentPart = currentAck;
-                        if (!await sendImagePart(currentPart)) {
-                            showUploadProgress(false);
-                            return;
+                        // Send the next packet after the acknowledged one
+                        const nextPart = currentAck + 1;
+                        if (nextPart < totalParts) {
+                            currentPart = nextPart;
+                            if (!await sendImagePart(currentPart)) {
+                                showUploadProgress(false);
+                                return;
+                            }
                         }
 
                         // Update progress bar
-                        const progressPercent = 30 + (currentPart / totalParts) * 60; // 30-90%
-                        updateProgress(progressPercent, `전송 중... ${currentPart}/${totalParts}`);
+                        const progressPercent = 30 + (currentAck / totalParts) * 60; // 30-90%
+                        updateProgress(progressPercent, `전송 중... ${currentAck + 1}/${totalParts}`);
 
-                        if (currentPart % 4 === 0) { // More frequent progress updates
-                            log(`📊 Progress ${currentPart}/${totalParts}`);
+                        if (currentAck % 4 === 0) { // More frequent progress updates
+                            log(`📊 Progress ${currentAck + 1}/${totalParts}`);
                         }
 
                         gotAck = false;
                     } else {
                         stallCounter++;
-                        if (stallCounter % 30 === 0) { // Balanced retry frequency
+                        if (stallCounter % 25 === 0) { // More frequent retries
                             log(`⏳ Still waiting for ACK… retry part ${currentPart}`);
                             if (!await sendImagePart(currentPart)) {
                                 showUploadProgress(false);
