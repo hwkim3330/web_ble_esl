@@ -348,9 +348,16 @@
                 </div>
 
                 <div class="text-controls" id="textControls">
-                    <input type="text" id="textInput" placeholder="텍스트를 입력하세요" value="NEMR ESL">
-                    <input type="number" id="fontSize" min="10" max="64" value="20">
-                    <button onclick="commitText()">추가</button>
+                    <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+                        <input type="text" id="textInput" placeholder="텍스트를 입력하세요" value="NEMR ESL" style="flex: 1;">
+                        <button onclick="commitText()" style="width: auto; padding: 8px 16px; margin: 0;">추가</button>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <label style="margin: 0; font-size: 0.9rem;">크기:</label>
+                        <input type="range" id="fontSizeSlider" min="10" max="48" value="20" style="flex: 1;" oninput="updateFontSize(this.value)">
+                        <span id="fontSizeValue" style="min-width: 35px; font-size: 0.9rem; font-weight: bold;">20px</span>
+                    </div>
+                    <input type="hidden" id="fontSize" value="20">
                 </div>
 
                 <div class="canvas-wrapper">
@@ -414,6 +421,11 @@
             if (e.ctrlKey && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
                 e.preventDefault();
                 redoCanvas();
+            }
+            // Enter to add text when text tool is active
+            if (e.key === 'Enter' && currentTool === 'text' && e.target.id === 'textInput') {
+                e.preventDefault();
+                commitText();
             }
         }
 
@@ -664,6 +676,12 @@
             const px = parseInt(size, 10);
             document.getElementById('brushSizeValue').textContent = px;
             ctx.lineWidth = px;
+        }
+
+        function updateFontSize(size) {
+            const px = parseInt(size, 10);
+            document.getElementById('fontSizeValue').textContent = px + 'px';
+            document.getElementById('fontSize').value = px;
         }
 
         function clearCanvas() {
