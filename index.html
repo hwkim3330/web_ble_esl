@@ -346,7 +346,6 @@
             <div class="card control-card">
                 <h2>📡 Device Connection</h2>
                 <div id="connectionStatus" class="status disconnected">❌ Not connected</div>
-                <div id="speedStatus" class="status" style="margin-top: 8px; font-size: 0.9em; opacity: 0.8;">🚀 Fast Mode</div>
                 <button id="connectBtn" onclick="connectDevice()">🔗 Connect to NEMR Device</button>
 
                 <div class="form-group">
@@ -457,10 +456,11 @@
         let cmdCharacteristic = null;
         let imgCharacteristic = null;
 
-        // Adaptive speed control
-        let transferMode = 'medium'; // Start with stable mode
-        let retryAttempts = 0;
-        let maxRetryAttempts = 2;
+        // Fixed timing values (original working configuration)
+        const MAIN_DELAY = 100;        // Main loop delay
+        const COMMAND_DELAY = 150;     // After command delay
+        const RETRY_INTERVAL = 50;     // Retry check interval
+        const TIMEOUT_LIMIT = 200;     // Max timeout iterations
 
         let partMsgSize = 244;
         let partDataSize = 240;
@@ -474,7 +474,6 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             initCanvas();
-            updateSpeedStatus(); // Initialize speed status display
             log('✅ NEMR ESL Studio Ready – Canvas initialised for 296×128');
             log('💡 Start creating your professional ESL design');
 
@@ -921,18 +920,6 @@
             }
         }
 
-        function updateSpeedStatus() {
-            const speedStatus = document.getElementById('speedStatus');
-            const config = getSpeedConfig();
-            const modeEmoji = {
-                'fast': '📶',
-                'medium': '⚡',
-                'slow': '🐌',
-                'ultra': '🛡️'
-            };
-
-            speedStatus.textContent = `${modeEmoji[transferMode]} ${config.name}`;
-        }
 
         async function connectDevice() {
             try {
@@ -948,8 +935,6 @@
                         const server = await device.gatt.connect();
                         log(`🔗 Reconnected to GATT server (${device.name})`);
 
-                        // Re-optimize transfer settings for this device
-                        optimizeForDevice(device.name);
 
                         await setupCharacteristics(server);
                         return;
@@ -967,9 +952,6 @@
 
                 const server = await device.gatt.connect();
                 log(`🔗 Connected to GATT server (${device.name})`);
-
-                // Optimize transfer settings for this specific device
-                optimizeForDevice(device.name);
 
                 await setupCharacteristics(server);
 
@@ -1091,10 +1073,6 @@
                 payload = convertToESLBitmap(imageData);
                 log(`🧮 Prepared payload (${payload.length} bytes)`);
 
-                // Get current speed configuration
-                const speedConfig = getSpeedConfig();
-                log(`🚀 Using ${speedConfig.name} (mainDelay: ${speedConfig.mainDelay}ms)`);
-
                 updateProgress(10, '핸드셰이크 시작...');
                 protocolStep = 0;
                 gotAck = false;
@@ -1105,15 +1083,12 @@
                     return;
                 }
 
-                for (let i = 0; i < speedConfig.timeout; i++) {
+                for (let i = 0; i < 200; i++) {
                     if (protocolStep >= 1) break;
-                    await delay(speedConfig.handshakeDelay);
+                    await delay(50);
                 }
                 if (protocolStep < 1) {
                     log('❌ Handshake (0x01) timeout');
-                    if (await attemptSpeedFallback('handshake_timeout')) {
-                        return await uploadToDevice(); // Retry with slower speed
-                    }
                     showUploadProgress(false);
                     return;
                 }
@@ -1130,7 +1105,7 @@
                     showUploadProgress(false);
                     return;
                 }
-                await delay(speedConfig.commandDelay);
+                await delay(COMMAND_DELAY);
 
                 if (!await sendCommand([0x03])) {
                     showUploadProgress(false);
@@ -1144,10 +1119,9 @@
                 let currentPart = 0;
                 let lastAck = -1;
                 let stallCounter = 0;
-                let failureAtPacket = -1;
 
                 // Wait before starting data transfer
-                await delay(speedConfig.preTransferDelay);
+                await delay(200);
 
                 // Send first packet
                 if (!await sendImagePart(currentPart)) {
@@ -1155,16 +1129,8 @@
                     return;
                 }
 
-                // Send next packet if dual sending is enabled
-                if (speedConfig.sendDual) {
-                    currentPart++;
-                    if (currentPart < totalParts) {
-                        await sendImagePart(currentPart);
-                    }
-                }
-
-                while (currentPart <= totalParts && stallCounter < speedConfig.timeout) {
-                    await delay(speedConfig.mainDelay);
+                while (currentPart <= totalParts && stallCounter < TIMEOUT_LIMIT) {
+                    await delay(MAIN_DELAY);
 
                     if (protocolStep === 99) {
                         updateProgress(100, '업로드 완료!');
@@ -1208,7 +1174,7 @@
                         gotAck = false;
                     } else {
                         stallCounter++;
-                        if (stallCounter % speedConfig.retryInterval === 0) {
+                        if (stallCounter % RETRY_INTERVAL === 0) {
                             log(`⏳ Still waiting for ACK… retry part ${currentPart}`);
                             if (!await sendImagePart(currentPart)) {
                                 showUploadProgress(false);
@@ -1218,14 +1184,8 @@
                     }
                 }
 
-                // Check if we failed at a specific packet and attempt fallback
-                if (stallCounter >= speedConfig.timeout) {
-                    failureAtPacket = currentPart;
-                    log(`⚠️ Transfer stalled at packet ${failureAtPacket}/${totalParts}`);
-                    if (await attemptSpeedFallback('transfer_stall', failureAtPacket)) {
-                        return await uploadToDevice(); // Retry with slower speed
-                    }
-                    log('❌ Transfer failed even with slowest speed');
+                if (stallCounter >= TIMEOUT_LIMIT) {
+                    log('❌ Transfer timed out');
                     showUploadProgress(false);
                     return;
                 }
@@ -1351,144 +1311,6 @@
             return new Promise(resolve => setTimeout(resolve, ms));
         }
 
-        function getSpeedConfig() {
-            switch(transferMode) {
-                case 'fast':
-                    return {
-                        mainDelay: 50,
-                        handshakeDelay: 50,
-                        commandDelay: 100,
-                        preTransferDelay: 200,
-                        retryInterval: 50,
-                        timeout: 200,
-                        sendDual: false,
-                        name: 'Standard Mode'
-                    };
-                case 'medium':
-                    return {
-                        mainDelay: 75,
-                        handshakeDelay: 75,
-                        commandDelay: 150,
-                        preTransferDelay: 300,
-                        retryInterval: 75,
-                        timeout: 250,
-                        sendDual: false,
-                        name: 'Stable Mode'
-                    };
-                case 'slow':
-                    return {
-                        mainDelay: 100,
-                        handshakeDelay: 100,
-                        commandDelay: 200,
-                        preTransferDelay: 500,
-                        retryInterval: 100,
-                        timeout: 300,
-                        sendDual: false,
-                        name: 'Compatible Mode'
-                    };
-                case 'ultra':
-                    return {
-                        mainDelay: 150,
-                        handshakeDelay: 150,
-                        commandDelay: 500,
-                        preTransferDelay: 1000,
-                        retryInterval: 150,
-                        timeout: 400,
-                        sendDual: false,
-                        name: 'Ultra Compatible'
-                    };
-            }
-        }
-
-        function fallbackToSlowerMode() {
-            if (transferMode === 'fast') {
-                transferMode = 'medium';
-                log('🔄 Switching to Medium speed mode...');
-                updateSpeedStatus();
-                return true;
-            } else if (transferMode === 'medium') {
-                transferMode = 'slow';
-                log('🔄 Switching to Slow speed mode for compatibility...');
-                updateSpeedStatus();
-                return true;
-            } else if (transferMode === 'slow') {
-                transferMode = 'ultra';
-                log('🔄 Switching to Ultra Slow mode (ATC1441 pattern)...');
-                updateSpeedStatus();
-                return true;
-            }
-            return false; // Already at slowest mode
-        }
-
-        async function attemptSpeedFallback(reason, packet = null) {
-            const packetInfo = packet !== null ? ` at packet ${packet}` : '';
-            log(`⚠️ Transfer failed (${reason}${packetInfo})`);
-
-            if (fallbackToSlowerMode()) {
-                const config = getSpeedConfig();
-                log(`🔄 Retrying with ${config.name}...`);
-                await delay(500); // Brief pause before retry
-                return true;
-            } else {
-                // If already at slowest mode, try reconnecting (atc1441 pattern)
-                log('⚠️ Already using slowest mode - attempting device reconnection...');
-                try {
-                    if (device && device.gatt.connected) {
-                        await device.gatt.disconnect();
-                        log('🔌 Disconnected from device');
-                        await delay(300); // 300ms delay like atc1441
-
-                        const server = await device.gatt.connect();
-                        log(`🔗 Reconnected to GATT server (${device.name})`);
-                        await setupCharacteristics(server);
-
-                        log('🔄 Attempting upload with fresh connection...');
-                        await delay(500);
-                        return true; // Try one more time with fresh connection
-                    }
-                } catch (reconnectError) {
-                    log(`❌ Reconnection failed: ${reconnectError.message}`);
-                }
-
-                log('❌ Device may be incompatible or have hardware issues');
-                return false;
-            }
-        }
-
-        function optimizeForDevice(deviceName) {
-            // Device-specific optimization profiles
-            const deviceProfile = getDeviceProfile(deviceName);
-
-            if (deviceProfile) {
-                transferMode = deviceProfile.recommendedMode;
-                log(`🎯 Applied ${deviceProfile.name} profile (${deviceProfile.recommendedMode} mode)`);
-
-                if (deviceProfile.notes) {
-                    log(`ℹ️ ${deviceProfile.notes}`);
-                }
-            } else {
-                // Default for unknown devices - start conservative
-                transferMode = 'medium';
-                log('🔧 Using Medium mode as default for unknown device');
-            }
-
-            updateSpeedStatus();
-        }
-
-        function getDeviceProfile(deviceName) {
-            const name = deviceName?.toLowerCase() || '';
-
-            // All NEMR devices start with stable medium mode
-            if (name.includes('nemr')) {
-                return {
-                    name: 'NEMR ESL Profile',
-                    recommendedMode: 'medium',
-                    notes: 'Stable mode for reliable transfers'
-                };
-            }
-
-            return null; // Unknown device
-        }
 
         function log(message) {
             const logArea = document.getElementById('logArea');
