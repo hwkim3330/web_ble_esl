@@ -456,12 +456,12 @@
         let cmdCharacteristic = null;
         let imgCharacteristic = null;
 
-        // Fixed timing values (conservative approach for debugging)
-        const MAIN_DELAY = 100;        // Main loop delay
-        const COMMAND_DELAY = 200;     // After command delay
-        const RETRY_INTERVAL = 50;     // Retry check interval
-        const TIMEOUT_LIMIT = 300;     // Max timeout iterations
-        const HANDSHAKE_DELAY = 100;   // Handshake loop delay
+        // Fixed timing values (restored from working bab702e commit)
+        const MAIN_DELAY = 20;         // Main loop delay (proven working)
+        const COMMAND_DELAY = 50;      // After command delay (proven working)
+        const RETRY_INTERVAL = 20;     // Retry check interval (proven working)
+        const TIMEOUT_LIMIT = 120;     // Max timeout iterations (proven working)
+        const HANDSHAKE_DELAY = 15;    // Handshake loop delay (proven working)
 
         let partMsgSize = 244;
         let partDataSize = 240;
@@ -1122,8 +1122,8 @@
                 let lastAck = -1;
                 let stallCounter = 0;
 
-                // Wait before starting data transfer
-                await delay(150);
+                // Wait before starting data transfer (original working value)
+                await delay(100);
 
                 // Send first packet
                 if (!await sendImagePart(currentPart)) {
