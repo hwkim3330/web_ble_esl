@@ -387,6 +387,7 @@
         let isShapeDrawing = false;
         let tempCanvas = null;
         let tempCtx = null;
+        let canvasRect = null;
         let device = null;
         let cmdCharacteristic = null;
         let imgCharacteristic = null;
@@ -449,6 +450,14 @@
             canvas = document.getElementById('drawingCanvas');
             ctx = canvas.getContext('2d');
 
+            // Cache canvas rect for performance
+            canvasRect = canvas.getBoundingClientRect();
+
+            // Update canvas rect on window resize
+            window.addEventListener('resize', () => {
+                canvasRect = canvas.getBoundingClientRect();
+            });
+
             // Create temporary canvas for shape preview
             tempCanvas = document.createElement('canvas');
             tempCanvas.width = ESL_WIDTH;
@@ -481,9 +490,8 @@
         }
 
         function handleMouseDown(e) {
-            const rect = canvas.getBoundingClientRect();
-            startX = e.clientX - rect.left;
-            startY = e.clientY - rect.top;
+            startX = e.clientX - canvasRect.left;
+            startY = e.clientY - canvasRect.top;
             lastX = startX;
             lastY = startY;
 
@@ -507,9 +515,8 @@
         }
 
         function handleMouseMove(e) {
-            const rect = canvas.getBoundingClientRect();
-            const currentX = e.clientX - rect.left;
-            const currentY = e.clientY - rect.top;
+            const currentX = e.clientX - canvasRect.left;
+            const currentY = e.clientY - canvasRect.top;
 
             if (isShapeDrawing && (currentTool === 'rect' || currentTool === 'circle' || currentTool === 'line')) {
                 // Clear canvas and redraw original content
@@ -569,16 +576,20 @@
         function handleTouch(e) {
             e.preventDefault();
             const touch = e.touches[0];
-            let eventType;
-            if (e.type === 'touchstart') eventType = 'mousedown';
-            else if (e.type === 'touchmove') eventType = 'mousemove';
-            else eventType = 'mouseup';
 
-            const mouseEvent = new MouseEvent(eventType, {
-                clientX: touch.clientX,
-                clientY: touch.clientY
-            });
-            canvas.dispatchEvent(mouseEvent);
+            if (e.type === 'touchstart') {
+                handleMouseDown({
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+            } else if (e.type === 'touchmove') {
+                handleMouseMove({
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+            } else if (e.type === 'touchend') {
+                handleMouseUp();
+            }
         }
 
         function setTool(tool) {
@@ -846,6 +857,25 @@
 
         async function connectDevice() {
             try {
+                if (device && device.gatt.connected) {
+                    log('✅ Already connected');
+                    return;
+                }
+
+                if (device) {
+                    // Try to reconnect to existing device
+                    log('🔄 Reconnecting to saved device...');
+                    try {
+                        const server = await device.gatt.connect();
+                        log(`🔗 Reconnected to GATT server (${device.name})`);
+                        await setupCharacteristics(server);
+                        return;
+                    } catch (reconnectError) {
+                        log('❌ Reconnection failed, searching for new device...');
+                        device = null;
+                    }
+                }
+
                 log('🔍 Searching for NEMR Bluetooth devices...');
                 device = await navigator.bluetooth.requestDevice({
                     filters: [{ namePrefix: 'NEMR' }],
@@ -854,23 +884,28 @@
 
                 const server = await device.gatt.connect();
                 log(`🔗 Connected to GATT server (${device.name})`);
+                await setupCharacteristics(server);
 
-                const service = await server.getPrimaryService('0000fef0-0000-1000-8000-00805f9b34fb');
-                cmdCharacteristic = await service.getCharacteristic('0000fef1-0000-1000-8000-00805f9b34fb');
-                imgCharacteristic = await service.getCharacteristic('0000fef2-0000-1000-8000-00805f9b34fb');
-
-                await cmdCharacteristic.startNotifications();
-                cmdCharacteristic.addEventListener('characteristicvaluechanged', handleCommandResponse);
-
-                // Add disconnect listener
-                device.addEventListener('gattserverdisconnected', handleDeviceDisconnected);
-
-                updateConnectionStatus(true);
-                log('✅ Ready to upload');
             } catch (error) {
                 log(`❌ Connection failed: ${error.message}`);
                 updateConnectionStatus(false);
             }
+        }
+
+        async function setupCharacteristics(server) {
+            const service = await server.getPrimaryService('0000fef0-0000-1000-8000-00805f9b34fb');
+            cmdCharacteristic = await service.getCharacteristic('0000fef1-0000-1000-8000-00805f9b34fb');
+            imgCharacteristic = await service.getCharacteristic('0000fef2-0000-1000-8000-00805f9b34fb');
+
+            await cmdCharacteristic.startNotifications();
+            cmdCharacteristic.addEventListener('characteristicvaluechanged', handleCommandResponse);
+
+            // Add disconnect listener (remove old ones first)
+            device.removeEventListener('gattserverdisconnected', handleDeviceDisconnected);
+            device.addEventListener('gattserverdisconnected', handleDeviceDisconnected);
+
+            updateConnectionStatus(true);
+            log('✅ Ready to upload');
         }
 
         function disconnectDevice() {
@@ -882,12 +917,16 @@
         }
 
         function handleDeviceDisconnected() {
-            log('⚠️ Device disconnected unexpectedly');
+            log('⚠️ Device disconnected');
             updateConnectionStatus(false);
             showUploadProgress(false);
-            device = null;
-            cmdCharacteristic = null;
-            imgCharacteristic = null;
+
+            // Don't clear device reference immediately - allow reconnection
+            setTimeout(() => {
+                if (device && !device.gatt.connected) {
+                    log('💡 Ready to reconnect - click Connect button');
+                }
+            }, 2000);
         }
 
         function handleCommandResponse(event) {
@@ -974,7 +1013,7 @@
 
                 for (let i = 0; i < 100; i++) {
                     if (protocolStep >= 1) break;
-                    await delay(30);
+                    await delay(15); // Faster handshake
                 }
                 if (protocolStep < 1) {
                     log('❌ Handshake (0x01) timeout');
@@ -994,7 +1033,7 @@
                     showUploadProgress(false);
                     return;
                 }
-                await delay(100);
+                await delay(50); // Faster between commands
 
                 if (!await sendCommand([0x03])) {
                     showUploadProgress(false);
@@ -1012,7 +1051,7 @@
                 if (!await sendImagePart(currentPart)) return;
 
                 while (currentPart < totalParts && stallCounter < 120) {
-                    await delay(40);
+                    await delay(20); // Reduced from 40ms to 20ms for faster transfer
 
                     if (protocolStep === 99) {
                         updateProgress(100, '업로드 완료!');
@@ -1045,16 +1084,19 @@
                         const progressPercent = 30 + (currentPart / totalParts) * 60; // 30-90%
                         updateProgress(progressPercent, `전송 중... ${currentPart}/${totalParts}`);
 
-                        if (currentPart % 8 === 0) {
+                        if (currentPart % 4 === 0) { // More frequent progress updates
                             log(`📊 Progress ${currentPart}/${totalParts}`);
                         }
 
                         gotAck = false;
                     } else {
                         stallCounter++;
-                        if (stallCounter % 30 === 0) {
+                        if (stallCounter % 20 === 0) { // Retry more frequently
                             log(`⏳ Still waiting for ACK… retry part ${currentPart}`);
-                            if (!await sendImagePart(currentPart)) return;
+                            if (!await sendImagePart(currentPart)) {
+                                showUploadProgress(false);
+                                return;
+                            }
                         }
                     }
                 }
