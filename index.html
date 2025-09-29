@@ -6,21 +6,20 @@
     <title>NEMR 2.9\" ESL Uploader</title>
     <style>
         :root {
-            --primary-color: #1976d2;
-            --secondary-color: #ffc107;
-            --success-color: #2e7d32;
-            --error-color: #d32f2f;
-            --bg-color: #f4f6fb;
-            --card-bg: #ffffff;
-            --text-color: #1f2933;
-            --border-color: #d6dee6;
-        }
-
-        [data-theme="dark"] {
-            --bg-color: #0f172a;
-            --card-bg: #111827;
-            --text-color: #e2e8f0;
-            --border-color: #1f2937;
+            --primary-color: #007AFF;
+            --secondary-color: #5AC8FA;
+            --success-color: #34C759;
+            --error-color: #FF3B30;
+            --warning-color: #FF9500;
+            --bg-color: #F2F2F7;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --text-color: #1D1D1F;
+            --text-secondary: #6D6D73;
+            --border-color: rgba(0, 0, 0, 0.1);
+            --shadow-light: rgba(0, 0, 0, 0.04);
+            --shadow-medium: rgba(0, 0, 0, 0.08);
+            --shadow-heavy: rgba(0, 0, 0, 0.12);
         }
 
         * {
@@ -30,10 +29,13 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--bg-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #F2F2F7 0%, #E5E5EA 100%);
             color: var(--text-color);
             min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         .container {
@@ -43,47 +45,47 @@
         }
 
         .card {
-            background: var(--card-bg);
-            border-radius: 16px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
             border: 1px solid var(--border-color);
-            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
-            padding: 24px;
+            box-shadow:
+                0 8px 32px var(--shadow-light),
+                0 1px 2px var(--shadow-medium),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5);
+            padding: 28px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow:
+                0 12px 40px var(--shadow-medium),
+                0 4px 8px var(--shadow-light),
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
         }
 
         .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 24px;
-            margin-bottom: 24px;
+            text-align: center;
+            margin-bottom: 32px;
         }
 
         h1 {
-            font-size: 1.9rem;
-            color: var(--primary-color);
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
         }
 
         .subtitle {
-            margin-top: 6px;
-            font-size: 0.95rem;
-            color: var(--text-color);
-            opacity: 0.75;
-        }
-
-        .theme-toggle {
-            border: none;
-            border-radius: 999px;
-            padding: 10px 20px;
-            background: var(--primary-color);
-            color: #fff;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .theme-toggle:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 22px rgba(25, 118, 210, 0.35);
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            font-weight: 400;
         }
 
         .layout {
@@ -114,49 +116,102 @@
 
         button {
             width: 100%;
-            padding: 12px;
-            border-radius: 12px;
+            padding: 16px 24px;
+            border-radius: 16px;
             border: none;
             font-weight: 600;
+            font-size: 16px;
             cursor: pointer;
             background: var(--primary-color);
-            color: #fff;
+            color: white;
             margin-top: 12px;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow:
+                0 4px 16px rgba(0, 122, 255, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+            border-radius: inherit;
+            pointer-events: none;
         }
 
         button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 22px rgba(25, 118, 210, 0.3);
+            transform: translateY(-2px) scale(1.02);
+            box-shadow:
+                0 8px 24px rgba(0, 122, 255, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0) scale(0.98);
         }
 
         button:disabled {
-            background: #98a2b3;
+            background: var(--text-secondary);
             cursor: not-allowed;
             box-shadow: none;
+            opacity: 0.6;
         }
 
         .btn-success {
             background: var(--success-color);
+            box-shadow:
+                0 4px 16px rgba(52, 199, 89, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-success:hover:not(:disabled) {
+            box-shadow:
+                0 8px 24px rgba(52, 199, 89, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--glass-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            box-shadow:
+                0 2px 8px var(--shadow-light),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow:
+                0 4px 16px var(--shadow-medium),
+                inset 0 1px 0 rgba(255, 255, 255, 0.7);
         }
 
         .status {
-            padding: 14px;
-            border-radius: 12px;
+            padding: 18px 24px;
+            border-radius: 16px;
             font-weight: 600;
             text-align: center;
-            border: 1px solid;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            font-size: 16px;
+            margin-bottom: 16px;
         }
 
         .status.disconnected {
-            border-color: rgba(211, 47, 47, 0.4);
-            background: rgba(211, 47, 47, 0.08);
+            background: rgba(255, 59, 48, 0.1);
+            border: 1px solid rgba(255, 59, 48, 0.2);
             color: var(--error-color);
         }
 
         .status.connected {
-            border-color: rgba(46, 125, 50, 0.4);
-            background: rgba(46, 125, 50, 0.1);
+            background: rgba(52, 199, 89, 0.1);
+            border: 1px solid rgba(52, 199, 89, 0.2);
             color: var(--success-color);
         }
 
@@ -282,20 +337,16 @@
 </head>
 <body>
     <div class="container">
-        <div class="card header">
-            <div>
-                <h1>🏷️ NEMR 2.9" ESL Uploader</h1>
-                <p class="subtitle">Fabric.js 기반 드로잉 · 296×128 해상도 · 안정적인 BLE 프로토콜</p>
-            </div>
-            <button class="theme-toggle" onclick="toggleTheme()">🌙 Dark Mode</button>
+        <div class="header">
+            <h1>🏷️ NEMR ESL Studio</h1>
+            <p class="subtitle">Professional 2.9" Electronic Shelf Label Designer</p>
         </div>
 
         <div class="layout">
             <div class="card control-card">
-                <h2>📡 Device & Upload</h2>
+                <h2>📡 Device Connection</h2>
                 <div id="connectionStatus" class="status disconnected">❌ Not connected</div>
                 <button id="connectBtn" onclick="connectDevice()">🔗 Connect to NEMR Device</button>
-                <button id="disconnectBtn" onclick="disconnectDevice()" style="display:none;">🔌 Disconnect</button>
 
                 <div class="form-group">
                     <label for="rotationSelect">Orientation</label>
@@ -306,18 +357,31 @@
                     <p class="hint">2.9" 패널은 기본적으로 가로모드입니다. 거꾸로 설치한 경우 180°를 사용하세요.</p>
                 </div>
 
-                <button id="uploadBtn" class="btn-success" onclick="uploadToDevice()" disabled>📤 Upload to ESL</button>
-                <div id="uploadProgress" style="display:none; margin-top:12px;">
-                    <div style="background:#e0e0e0; border-radius:8px; height:8px; overflow:hidden;">
-                        <div id="progressBar" style="background:var(--success-color); height:100%; width:0%; transition:width 0.3s ease;"></div>
+                <div style="margin-top: 24px;">
+                    <h3 style="margin-bottom: 16px; font-size: 1.1rem; color: var(--text-color);">📤 Upload</h3>
+                    <button id="uploadBtn" class="btn-success" onclick="uploadToDevice()" disabled>📤 Upload to ESL</button>
+                    <div id="uploadProgress" style="display:none; margin-top:16px;">
+                        <div style="background:rgba(0,0,0,0.1); border-radius:12px; height:8px; overflow:hidden;">
+                            <div id="progressBar" style="background:var(--success-color); height:100%; width:0%; transition:width 0.3s ease; border-radius:12px;"></div>
+                        </div>
+                        <p id="progressText" style="margin-top:8px; font-size:0.9rem; text-align:center; color: var(--text-secondary);">준비 중...</p>
                     </div>
-                    <p id="progressText" style="margin-top:6px; font-size:0.9rem; text-align:center;">준비 중...</p>
                 </div>
-                <button onclick="downloadCanvas()">💾 Download PNG</button>
-                <button onclick="clearCanvas()">🗑️ Clear Canvas</button>
-                <button onclick="addDemoLayout()">✨ Sample Layout</button>
-                <button onclick="undoCanvas()" id="undoBtn" disabled>↶ Undo</button>
-                <button onclick="redoCanvas()" id="redoBtn" disabled>↷ Redo</button>
+
+                <div style="margin-top: 24px;">
+                    <h3 style="margin-bottom: 16px; font-size: 1.1rem; color: var(--text-color);">🎨 Canvas Actions</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <button onclick="undoCanvas()" id="undoBtn" disabled class="btn-secondary">↶ Undo</button>
+                        <button onclick="redoCanvas()" id="redoBtn" disabled class="btn-secondary">↷ Redo</button>
+                    </div>
+                    <button onclick="addDemoLayout()" class="btn-secondary">✨ Sample Layout</button>
+                    <button onclick="downloadCanvas()" class="btn-secondary">💾 Download PNG</button>
+                </div>
+
+                <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border-color);">
+                    <button onclick="clearCanvas()" style="background: var(--error-color); box-shadow: 0 4px 16px rgba(255, 59, 48, 0.2);">🗑️ Clear Canvas</button>
+                    <button id="disconnectBtn" onclick="disconnectDevice()" style="display:none; background: var(--text-secondary); margin-top: 8px;">🔌 Disconnect Device</button>
+                </div>
             </div>
 
             <div class="card canvas-card">
@@ -403,10 +467,9 @@
         let maxHistory = 50;
 
         document.addEventListener('DOMContentLoaded', () => {
-            initTheme();
             initCanvas();
-            log('✅ Ready – Native Canvas initialised for 296×128 ESL');
-            log('💡 Draw freely, 가져온 이미지를 배치하고 업로드하세요.');
+            log('✅ NEMR ESL Studio Ready – Canvas initialised for 296×128');
+            log('💡 Start creating your professional ESL design');
 
             // Add keyboard shortcuts
             document.addEventListener('keydown', handleKeyboard);
@@ -430,21 +493,6 @@
             }
         }
 
-        function initTheme() {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.body.dataset.theme = savedTheme;
-            const btn = document.querySelector('.theme-toggle');
-            btn.textContent = savedTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
-        }
-
-        function toggleTheme() {
-            const body = document.body;
-            const next = body.dataset.theme === 'dark' ? 'light' : 'dark';
-            body.dataset.theme = next;
-            localStorage.setItem('theme', next);
-            const btn = document.querySelector('.theme-toggle');
-            btn.textContent = next === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
-        }
 
         function initCanvas() {
             canvas = document.getElementById('drawingCanvas');
@@ -489,9 +537,19 @@
             saveCanvasState();
         }
 
+        function getCanvasCoordinates(clientX, clientY) {
+            // Always get fresh rect to handle scroll changes
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
         function handleMouseDown(e) {
-            startX = e.clientX - canvasRect.left;
-            startY = e.clientY - canvasRect.top;
+            const coords = getCanvasCoordinates(e.clientX, e.clientY);
+            startX = coords.x;
+            startY = coords.y;
             lastX = startX;
             lastY = startY;
 
@@ -515,8 +573,9 @@
         }
 
         function handleMouseMove(e) {
-            const currentX = e.clientX - canvasRect.left;
-            const currentY = e.clientY - canvasRect.top;
+            const coords = getCanvasCoordinates(e.clientX, e.clientY);
+            const currentX = coords.x;
+            const currentY = coords.y;
 
             if (isShapeDrawing && (currentTool === 'rect' || currentTool === 'circle' || currentTool === 'line')) {
                 // Clear canvas and redraw original content
@@ -842,14 +901,14 @@
                 status.classList.remove('disconnected');
                 status.classList.add('connected');
                 status.textContent = `✅ Connected to ${device.name}`;
-                connectBtn.style.display = 'none';
+                connectBtn.textContent = '🔄 Reconnect';
                 disconnectBtn.style.display = 'block';
                 uploadBtn.disabled = false;
             } else {
                 status.classList.add('disconnected');
                 status.classList.remove('connected');
                 status.textContent = '❌ Not connected';
-                connectBtn.style.display = 'block';
+                connectBtn.textContent = '🔗 Connect to NEMR Device';
                 disconnectBtn.style.display = 'none';
                 uploadBtn.disabled = true;
             }
@@ -1059,8 +1118,8 @@
                     return;
                 }
 
-                while (currentPart < totalParts && stallCounter < 200) { // Increased timeout
-                    await delay(30); // Balanced timing for reliability
+                while (currentPart < totalParts && stallCounter < 150) { // Balanced timeout
+                    await delay(25); // Optimized timing for speed + reliability
 
                     if (protocolStep === 99) {
                         updateProgress(100, '업로드 완료!');
@@ -1100,7 +1159,7 @@
                         gotAck = false;
                     } else {
                         stallCounter++;
-                        if (stallCounter % 40 === 0) { // Less frequent but more stable retries
+                        if (stallCounter % 30 === 0) { // Balanced retry frequency
                             log(`⏳ Still waiting for ACK… retry part ${currentPart}`);
                             if (!await sendImagePart(currentPart)) {
                                 showUploadProgress(false);
@@ -1113,7 +1172,16 @@
                 if (protocolStep === 99) {
                     updateProgress(100, 'ESL 새로고침 완료!');
                     log('✅ ESL refresh complete');
-                    setTimeout(() => showUploadProgress(false), 2000);
+                    setTimeout(() => {
+                        showUploadProgress(false);
+                        // Auto-reconnect after successful transfer
+                        setTimeout(() => {
+                            if (!device || !device.gatt.connected) {
+                                log('🔄 Auto-reconnecting...');
+                                connectDevice();
+                            }
+                        }, 1000);
+                    }, 2000);
                 } else {
                     log('⚠️ Transfer ended without final confirmation');
                     showUploadProgress(false);
