@@ -927,7 +927,8 @@
             const modeEmoji = {
                 'fast': '🚀',
                 'medium': '⚡',
-                'slow': '🐌'
+                'slow': '🐌',
+                'ultra': '🛡️'
             };
 
             speedStatus.textContent = `${modeEmoji[transferMode]} ${config.name}`;
@@ -1069,6 +1070,12 @@
             packet.set(payload.slice(offset, offset + chunkLength), 4);
             try {
                 await imgCharacteristic.writeValue(packet);
+
+                // Ultra slow mode: add extra delay after each packet (atc1441 pattern)
+                if (transferMode === 'ultra') {
+                    await delay(500); // 500ms delay like atc1441's implementation
+                }
+
                 return true;
             } catch (error) {
                 log(`❌ Data part send failed: ${error.message}`);
@@ -1385,6 +1392,17 @@
                         sendDual: false,
                         name: 'Slow Mode (Compatible)'
                     };
+                case 'ultra':
+                    return {
+                        mainDelay: 100,
+                        handshakeDelay: 100,
+                        commandDelay: 500,  // Based on atc1441's 500ms pattern
+                        preTransferDelay: 500,
+                        retryInterval: 100,
+                        timeout: 300,
+                        sendDual: false,
+                        name: 'Ultra Slow (ATC1441 Pattern)'
+                    };
             }
         }
 
@@ -1397,6 +1415,11 @@
             } else if (transferMode === 'medium') {
                 transferMode = 'slow';
                 log('🔄 Switching to Slow speed mode for compatibility...');
+                updateSpeedStatus();
+                return true;
+            } else if (transferMode === 'slow') {
+                transferMode = 'ultra';
+                log('🔄 Switching to Ultra Slow mode (ATC1441 pattern)...');
                 updateSpeedStatus();
                 return true;
             }
@@ -1413,7 +1436,27 @@
                 await delay(500); // Brief pause before retry
                 return true;
             } else {
-                log('❌ Already using slowest mode - device may be incompatible');
+                // If already at slowest mode, try reconnecting (atc1441 pattern)
+                log('⚠️ Already using slowest mode - attempting device reconnection...');
+                try {
+                    if (device && device.gatt.connected) {
+                        await device.gatt.disconnect();
+                        log('🔌 Disconnected from device');
+                        await delay(300); // 300ms delay like atc1441
+
+                        const server = await device.gatt.connect();
+                        log(`🔗 Reconnected to GATT server (${device.name})`);
+                        await setupCharacteristics(server);
+
+                        log('🔄 Attempting upload with fresh connection...');
+                        await delay(500);
+                        return true; // Try one more time with fresh connection
+                    }
+                } catch (reconnectError) {
+                    log(`❌ Reconnection failed: ${reconnectError.message}`);
+                }
+
+                log('❌ Device may be incompatible or have hardware issues');
                 return false;
             }
         }
