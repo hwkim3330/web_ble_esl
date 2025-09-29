@@ -456,11 +456,12 @@
         let cmdCharacteristic = null;
         let imgCharacteristic = null;
 
-        // Fixed timing values (original working configuration)
-        const MAIN_DELAY = 100;        // Main loop delay
-        const COMMAND_DELAY = 150;     // After command delay
+        // Fixed timing values (based on atc1441 and proven ESL implementations)
+        const MAIN_DELAY = 50;         // Main loop delay
+        const COMMAND_DELAY = 100;     // After command delay
         const RETRY_INTERVAL = 50;     // Retry check interval
-        const TIMEOUT_LIMIT = 200;     // Max timeout iterations
+        const TIMEOUT_LIMIT = 300;     // Max timeout iterations
+        const HANDSHAKE_DELAY = 50;    // Handshake loop delay
 
         let partMsgSize = 244;
         let partDataSize = 240;
@@ -1083,9 +1084,9 @@
                     return;
                 }
 
-                for (let i = 0; i < 200; i++) {
+                for (let i = 0; i < TIMEOUT_LIMIT; i++) {
                     if (protocolStep >= 1) break;
-                    await delay(50);
+                    await delay(HANDSHAKE_DELAY);
                 }
                 if (protocolStep < 1) {
                     log('❌ Handshake (0x01) timeout');
@@ -1121,7 +1122,7 @@
                 let stallCounter = 0;
 
                 // Wait before starting data transfer
-                await delay(200);
+                await delay(150);
 
                 // Send first packet
                 if (!await sendImagePart(currentPart)) {
