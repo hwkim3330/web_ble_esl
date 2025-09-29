@@ -456,12 +456,12 @@
         let cmdCharacteristic = null;
         let imgCharacteristic = null;
 
-        // Fixed timing values (restored from working bab702e commit)
-        const MAIN_DELAY = 20;         // Main loop delay (proven working)
-        const COMMAND_DELAY = 50;      // After command delay (proven working)
-        const RETRY_INTERVAL = 20;     // Retry check interval (proven working)
+        // Fixed timing values (from working f619f14 - Fabric.js replacement commit)
+        const MAIN_DELAY = 40;         // Main loop delay (proven working)
+        const COMMAND_DELAY = 100;     // After command delay (proven working)
+        const RETRY_INTERVAL = 30;     // Retry check interval (proven working)
         const TIMEOUT_LIMIT = 120;     // Max timeout iterations (proven working)
-        const HANDSHAKE_DELAY = 15;    // Handshake loop delay (proven working)
+        const HANDSHAKE_DELAY = 30;    // Handshake loop delay (proven working)
 
         let partMsgSize = 244;
         let partDataSize = 240;
